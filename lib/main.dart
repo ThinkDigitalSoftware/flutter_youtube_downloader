@@ -76,24 +76,25 @@ class _MyHomePageState extends State<MyHomePage> {
               children: [
                 if (state is VideoDetailsState)
                   Container(
-                    height: 300,
                     padding: EdgeInsets.all(10),
                     decoration: BoxDecoration(border: Border.all()),
-                    child: Row(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            Card(
-                              child: Image.network(
-                                state.video.thumbnailSet.mediumResUrl,
-                                fit: BoxFit.fitHeight,
-                              ),
-                              elevation: 8,
-                            ),
-                            Text(state.video.description)
-                          ],
+                        Card(
+                          child: Image.network(
+                            state.video.thumbnailSet.mediumResUrl,
+                            fit: BoxFit.fitHeight,
+                          ),
+                          elevation: 8,
                         ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            state.video.description,
+                            softWrap: true,
+                          ),
+                        )
                       ],
                     ),
                   ),
@@ -108,15 +109,15 @@ class _MyHomePageState extends State<MyHomePage> {
                             border: OutlineInputBorder(),
                             suffixIcon: IconButton(
                               icon: Icon(Icons.clear),
-                              onPressed: () => controller.clear(),
+                              onPressed: () {
+                                if (videoUrl.isNotEmpty) {
+                                  controller.clear();
+                                }
+                              },
                             ),
                           ),
                           controller: controller,
-                          onChanged: (_) {
-                            if (videoUrl.isNotEmpty) {
-                              controller.clear();
-                            }
-                          },
+                          onChanged: (_) {},
                           validator: (String url) {
                             bool isValid =
                                 YoutubeExplode.parseVideoId(url) != null;

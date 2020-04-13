@@ -15,19 +15,25 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   @override
   Stream<AppState> mapEventToState(
     AppEvent event,
-  ) async* {}
+  ) async* {
+    if (event is YieldState) {
+      yield event.state;
+      return;
+    }
+  }
 
   Future<void> getVideoDetails(String url) async {
     final id = YoutubeExplode.parseVideoId(url);
     final video = await extractor.getVideo(id);
     final MediaStreamInfoSet mediaStreamInfoSet = await getMediaStreamUrls(id);
-    add(YieldState(VideoDetailsState(video:video, mediaStreamInfoSet: mediaStreamInfoSet)));
+    add(YieldState(VideoDetailsState(
+        video: video, mediaStreamInfoSet: mediaStreamInfoSet)));
   }
 
-   Future<MediaStreamInfoSet> getMediaStreamUrls(String id) async {
+  Future<MediaStreamInfoSet> getMediaStreamUrls(String id) async {
     final MediaStreamInfoSet mediaStreams =
         await extractor.getVideoMediaStream(id);
 
-   return mediaStreams;
+    return mediaStreams;
   }
 }
