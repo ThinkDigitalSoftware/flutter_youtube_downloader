@@ -1,8 +1,8 @@
 import 'dart:io';
+import 'package:flutter_youtube_downloader/format_list_view.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_youtube_downloader/bloc/history_entry.dart';
-import 'package:flutter_youtube_downloader/format_tile.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,6 +12,7 @@ import 'package:flutter_youtube_downloader/widgets/video_history_list.dart';
 import 'package:hive/hive.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:flutter_youtube_downloader/extensions.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart' hide Container;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -86,16 +87,6 @@ class _MyHomePageState extends State<MyHomePage>
           await appBloc.firstWhere((appState) => appState.isLoading == false);
           animationController.reverse();
         }
-//          if (!state.isLoading && (animationController?.isAnimating ?? false)) {
-//            Function(AnimationStatus status) listener;
-//            listener = (AnimationStatus status) {
-//              if (status == AnimationStatus.forward) {
-//                animationController.reset();
-//                animationController.removeStatusListener(listener);
-//              }
-//            };
-//            animationController.addStatusListener(listener);
-//          }
       },
       builder: (BuildContext context, AppState state) {
         return Scaffold(
@@ -174,45 +165,48 @@ class _MyHomePageState extends State<MyHomePage>
                           ),
                         ),
                       if (state.hasMediaStreamInfo)
-                        Row(
-                          children: [
-                            Expanded(
-                                child: Card(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  Text('Muxed'),
-                                  ListView.separated(
-                                    itemCount:
-                                        state.mediaStreamInfoSet.muxed.length,
-                                    shrinkWrap: true,
-                                    separatorBuilder:
-                                        (BuildContext context, int index) {
-                                      return Divider();
-                                    },
-                                    itemBuilder:
-                                        (BuildContext context, int index) {
-                                      final format =
-                                          state.mediaStreamInfoSet.muxed[index];
-
-                                      return FormatTile(
-                                        format: format,
-                                        trailing: IconButton(
-                                          icon: Icon(Icons.cloud_download),
-                                          onPressed: () async {
-                                            await appBloc.downloadVideo(
-                                              video: state.video,
-                                              format: format,
-                                            );
-                                          },
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
+                        Expanded(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: FormatListView(
+                                  title: 'Video with Audio',
+                                  mediaStreams: state.mediaStreamInfoSet.muxed,
+                                  onPressed: (MediaStreamInfo format) async {
+                                    await appBloc.downloadVideo(
+                                      video: state.video,
+                                      format: format,
+                                    );
+                                  },
+                                ),
                               ),
-                            ))
-                          ],
+                              Expanded(
+                                child: FormatListView(
+                                  title: 'Video Only',
+                                  mediaStreams: state.mediaStreamInfoSet.video,
+                                  onPressed: (MediaStreamInfo format) async {
+                                    await appBloc.downloadVideo(
+                                      video: state.video,
+                                      format: format,
+                                    );
+                                  },
+                                ),
+                              ),
+                              Expanded(
+                                child: FormatListView(
+                                  title: 'Audio only',
+                                  mediaStreams: state.mediaStreamInfoSet.audio,
+                                  onPressed: (MediaStreamInfo format) async {
+                                    await appBloc.downloadVideo(
+                                      video: state.video,
+                                      format: format,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
                         )
                     ],
                   ),

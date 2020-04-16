@@ -80,3 +80,11 @@ extension DateTimeX on DateTime {
     }
   }
 }
+
+extension ContainerX on Container {
+  String get extension => toString().substring(toString().lastIndexOf(('.')));
+}
+
+extension AudioEncodingX on AudioEncoding {
+  String get extension => toString().substring(toString().lastIndexOf(('.')));
+}

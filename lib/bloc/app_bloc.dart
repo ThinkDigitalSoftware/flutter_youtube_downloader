@@ -78,8 +78,7 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
 
   Future<bool> downloadVideo(
       {@required Video video, @required MediaStreamInfo format}) async {
-    var containerName = format.container.toString();
-    var extension = containerName.substring(containerName.lastIndexOf(('.')));
+    var extension = format.container.extension;
     String suggestedFileName;
     if (format is MuxedStreamInfo) {
       suggestedFileName =
