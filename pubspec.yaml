@@ -19,6 +19,14 @@ dependencies:
   flutter_bloc: ^3.2.0
   hydrated_bloc: ^3.0.0
   cupertino_icons: ^0.1.3
+  animated_layout: ^0.0.2
+  cached_network_image: ^2.1.0+1
+  hive: ^1.4.1+1
+  file_chooser:
+    git:
+      url: git://github.com/google/flutter-desktop-embedding.git
+      path: plugins/file_chooser
+      ref: 4ee135c
 
 dev_dependencies:
   flutter_test:

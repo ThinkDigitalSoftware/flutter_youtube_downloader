@@ -1,11 +1,23 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_youtube_downloader/format_tile.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_youtube_downloader/bloc/app_bloc.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart' hide Container;
+import 'package:flutter_youtube_downloader/widgets/search_drawer_section.dart';
+import 'package:flutter_youtube_downloader/widgets/video_history_list.dart';
+import 'package:hive/hive.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:flutter_youtube_downloader/extensions.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  Hive.init(Directory.current.path);
+  await Hive.openBox('database');
+
+  BlocSupervisor.delegate = await HydratedBlocDelegate.build();
   runApp(MyApp());
 }
 
@@ -18,6 +30,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'Flutter Youtube Video Downloader',
         theme: ThemeData(
+          brightness: Brightness.dark,
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
@@ -37,10 +50,21 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  TextEditingController controller = TextEditingController();
+  final TextEditingController urlController = TextEditingController();
 
-  var selectedFormat;
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    urlController.dispose();
+    super.dispose();
+  }
+
   AppBloc get appBloc => BlocProvider.of<AppBloc>(context);
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AppBloc, AppState>(
@@ -48,180 +72,135 @@ class _MyHomePageState extends State<MyHomePage> {
         return Scaffold(
           appBar: AppBar(
             title: Text(widget.title),
-            actions: [
-              FlatButton(
-                child: Text(
-                  'Load',
-                  style: TextStyle(color: Colors.white),
-                ),
-                onPressed: () async {
-                  if (videoUrl.isNotEmpty) {
-                    loadDetails(videoUrl);
-                  }
+          ),
+          body: Row(
+            children: <Widget>[
+              NavigationRail(
+                destinations: [
+                  NavigationRailDestination(
+                      icon: Icon(Icons.search), label: Text('Search')),
+                  NavigationRailDestination(
+                      icon: Icon(Icons.history), label: Text('History')),
+                ],
+                selectedIndex: state.navigationDrawerIndex,
+                labelType: NavigationRailLabelType.selected,
+                onDestinationSelected: (int index) {
+                  appBloc.changeNavigationIndex(index);
                 },
               ),
-              FlatButton(
-                child: Text(
-                  'List formats',
-                  style: TextStyle(color: Colors.white),
-                ),
-                onPressed: listFormats,
+              Drawer(
+                child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: AnimatedSwitcher(
+                      duration: kThemeAnimationDuration,
+                      child: getDrawerWidget(state),
+                    )),
               ),
-            ],
-          ),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (state is VideoDetailsState)
-                  Container(
-                    padding: EdgeInsets.all(10),
-                    decoration: BoxDecoration(border: Border.all()),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Card(
-                          child: Image.network(
-                            state.video.thumbnailSet.mediumResUrl,
-                            fit: BoxFit.fitHeight,
+              Expanded(
+                child: Container(
+                  constraints: BoxConstraints(maxWidth: 500),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (state.hasVideo)
+                        Container(
+                          padding: EdgeInsets.all(10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Card(
+                                child: CachedNetworkImage(
+                                  imageUrl:
+                                      state.video.thumbnailSet.mediumResUrl,
+                                  fit: BoxFit.fitHeight,
+                                ),
+                                elevation: 8,
+                              ),
+                              Card(
+                                child: Container(
+                                  padding: EdgeInsets.all(10),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      ListTile(
+                                        title: Text(state.video.title),
+                                        subtitle: Text(
+                                            '${state.video.statistics.viewCount} views • ${state.video.uploadDate.toMdY()}'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            ],
                           ),
-                          elevation: 8,
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            state.video.description,
-                            softWrap: true,
-                          ),
+                      if (state.hasMediaStreamInfo)
+                        Row(
+                          children: [
+                            Expanded(
+                                child: Card(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  Text('Muxed'),
+                                  ListView.separated(
+                                    itemCount:
+                                        state.mediaStreamInfoSet.muxed.length,
+                                    shrinkWrap: true,
+                                    separatorBuilder:
+                                        (BuildContext context, int index) {
+                                      return Divider();
+                                    },
+                                    itemBuilder:
+                                        (BuildContext context, int index) {
+                                      final format =
+                                          state.mediaStreamInfoSet.muxed[index];
+
+                                      return FormatTile(
+                                        format: format,
+                                        trailing: IconButton(
+                                          icon: Icon(Icons.cloud_download),
+                                          onPressed: () async {
+                                            await appBloc.downloadVideo(
+                                              video: state.video,
+                                              format: format,
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ))
+                          ],
                         )
-                      ],
-                    ),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: TextFormField(
-                          decoration: InputDecoration(
-                            labelText: 'Video Url',
-                            border: OutlineInputBorder(),
-                            suffixIcon: IconButton(
-                              icon: Icon(Icons.clear),
-                              onPressed: () {
-                                if (videoUrl.isNotEmpty) {
-                                  controller.clear();
-                                }
-                              },
-                            ),
-                          ),
-                          controller: controller,
-                          onChanged: (_) {},
-                          validator: (String url) {
-                            bool isValid =
-                                YoutubeExplode.parseVideoId(url) != null;
-                            if (!isValid) {
-                              return 'Please enter a valid Youtube video Url';
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
                     ],
                   ),
                 ),
-                if (state is VideoDetailsState)
-                  ExpansionTile(title: Text('Video Streams'))
-                // Expanded(
-                //   child: Container(
-                //     height: 50,
-                //     padding: EdgeInsets.all(10),
-                //     child: DropdownButton<Format>(
-                //       value: selectedFormat,
-                //       hint: Text('Select a format'),
-                //       items: [
-                //         for (final format in state.mediaStreamInfoSet)
-                //           DropdownMenuItem<Format>(
-                //             child: Container(
-                //                 width:
-                //                     MediaQuery.of(context).size.width * .85,
-                //                 child: format.toWidget()),
-                //             value: format,
-                //           )
-                //       ],
-                //       onChanged: (Format value) {
-                //         setState(() {
-                //           selectedFormat = value;
-                //         });
-                //       },
-                //     ),
-                //   ),
-                // )
-              ],
-            ),
-          ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: selectedFormat != null ? () async {} : null,
-            tooltip: 'Download video',
-            child: Icon(Icons.cloud_download),
+              )
+            ],
           ),
         );
       },
     );
   }
 
-  String get videoUrl => controller.text;
-
-  void loadThumbnail(String url) async {}
-
-  String get videoId {
-    final regex = RegExp('v=(.+)');
-
-    final allMatches = regex.allMatches(videoUrl);
-    if (allMatches.isNotEmpty) {
-      var id = allMatches.first.group(1);
-      if (id.length == 11) {
-        return id;
-      }
+  Widget getDrawerWidget(AppState state) {
+    switch (state.navigationDrawerIndex) {
+      case 0:
+        return SearchDrawerSection(controller: urlController);
+      case 1:
+      default:
+        return VideoHistoryList(
+          history: state.history,
+          onPressed: (entry) {
+            urlController.text = entry.url;
+          },
+        );
     }
-    return '';
-  }
-
-  void listFormats() async {
-    // final result =
-    //     await Process.run('youtube-dl', ['--list-formats', videoUrl]);
-
-    // List rawFormats = result.stdout
-    //     .toString()
-    //     .split('\n')
-    //     .skipWhile((value) => !value.startsWith(RegExp(r'\d')))
-    //     .where((value) => value.isNotEmpty)
-    //     .toList();
-
-    // List<Format> formats = rawFormats.map((e) => Format.fromString(e)).toList();
-    // setState(() {
-    //   selectedFormat = null;
-    //   availableFormats = formats;
-    // });
-  }
-
-  Future<void> loadDetails(String url) async {
-    appBloc.getVideoDetails(url);
-//    final String description =
-//        await command(url: url, command: '--get-description');
-//    final String duration = await command(url: url, command: '--get-duration');
-//    final String fileName = await command(url: url, command: '--get-filename');
-//    VideoDetails details = VideoDetails(
-//        duration: duration, fileName: fileName, description: description);
-//    return details;
-  }
-
-  Future<String> command({
-    @required String url,
-    @required String command,
-  }) async {
-    final result = await Process.run('youtube-dl', [command, url]);
-    return result.stdout.toString().trim();
   }
 }
