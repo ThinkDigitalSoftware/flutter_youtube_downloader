@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_youtube_downloader/bloc/history_entry.dart';
 import 'package:flutter_youtube_downloader/format_tile.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -49,17 +50,26 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
   final TextEditingController urlController = TextEditingController();
+  AnimationController animationController;
 
   @override
   void initState() {
+    animationController = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 2),
+      lowerBound: 0,
+      upperBound: 1,
+    );
     super.initState();
   }
 
   @override
   void dispose() {
     urlController.dispose();
+    animationController.dispose();
     super.dispose();
   }
 
@@ -67,7 +77,26 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AppBloc, AppState>(
+    return BlocConsumer<AppBloc, AppState>(
+      listenWhen: (oldState, newState) =>
+          oldState.isLoading != newState.isLoading,
+      listener: (context, state) async {
+        if (state.isLoading && !animationController.isAnimating) {
+          animationController.repeat(reverse: true);
+          await appBloc.firstWhere((appState) => appState.isLoading == false);
+          animationController.reverse();
+        }
+//          if (!state.isLoading && (animationController?.isAnimating ?? false)) {
+//            Function(AnimationStatus status) listener;
+//            listener = (AnimationStatus status) {
+//              if (status == AnimationStatus.forward) {
+//                animationController.reset();
+//                animationController.removeStatusListener(listener);
+//              }
+//            };
+//            animationController.addStatusListener(listener);
+//          }
+      },
       builder: (BuildContext context, AppState state) {
         return Scaffold(
           appBar: AppBar(
@@ -78,7 +107,14 @@ class _MyHomePageState extends State<MyHomePage> {
               NavigationRail(
                 destinations: [
                   NavigationRailDestination(
-                      icon: Icon(Icons.search), label: Text('Search')),
+                      icon: RotationTransition(
+                        turns: animationController,
+                        child: AnimatedIcon(
+                          icon: AnimatedIcons.search_ellipsis,
+                          progress: animationController,
+                        ),
+                      ),
+                      label: Text('Search')),
                   NavigationRailDestination(
                       icon: Icon(Icons.history), label: Text('History')),
                 ],
@@ -197,8 +233,10 @@ class _MyHomePageState extends State<MyHomePage> {
       default:
         return VideoHistoryList(
           history: state.history,
-          onPressed: (entry) {
+          onPressed: (HistoryEntry entry) {
             urlController.text = entry.url;
+            appBloc.changeNavigationIndex(0);
+            appBloc.getVideoDetails(entry.url);
           },
         );
     }

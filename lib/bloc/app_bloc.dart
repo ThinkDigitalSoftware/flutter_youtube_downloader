@@ -35,6 +35,9 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
 
   Future<void> getVideoDetails(String url) async {
     final id = YoutubeExplode.parseVideoId(url);
+
+    add(YieldState(state.copyWith(isLoading: true)));
+
     final video = await extractor.getVideo(id);
     final MediaStreamInfoSet mediaStreamInfoSet = await getMediaStreamUrls(id);
     final historyEntry = HistoryEntry.fromVideo(video, url: url);
@@ -50,6 +53,7 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
               historyEntry
           ],
           navigationDrawerIndex: state.navigationDrawerIndex,
+          isLoading: false,
         ),
       ),
     );

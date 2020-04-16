@@ -57,7 +57,11 @@ class _SearchDrawerSectionState extends State<SearchDrawerSection> {
                     ),
                     controller: widget.controller,
                     onChanged: (_) {},
-                    onFieldSubmitted: submit,
+                    onFieldSubmitted: (String url) {
+                      if (state.video.id != YoutubeExplode.parseVideoId(url)) {
+                        submit(url);
+                      }
+                    },
                     validator: (String url) {
                       bool isValid = YoutubeExplode.parseVideoId(url) != null;
                       if (!isValid) {
@@ -74,9 +78,14 @@ class _SearchDrawerSectionState extends State<SearchDrawerSection> {
                       padding: const EdgeInsets.all(8.0),
                       child: Icon(Icons.search),
                     ),
-                    onTap: () async {
-                      submit(widget.controller.text);
-                    },
+                    onTap: state.isLoading
+                        ? null
+                        : () {
+                            if (state.video.id !=
+                                YoutubeExplode.parseVideoId(videoUrl)) {
+                              submit(videoUrl);
+                            }
+                          },
                   ),
                 )
               ]),

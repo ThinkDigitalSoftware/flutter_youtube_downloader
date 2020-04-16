@@ -6,6 +6,7 @@ class AppState {
   final int navigationDrawerIndex;
   final Video video;
   final MediaStreamInfoSet mediaStreamInfoSet;
+  final bool isLoading;
 
 //<editor-fold desc="Data Methods" defaultstate="collapsed">
 
@@ -14,9 +15,11 @@ class AppState {
     @required this.navigationDrawerIndex,
     this.video,
     this.mediaStreamInfoSet,
+    @required this.isLoading,
   });
 
   bool get hasVideo => video != null;
+
   bool get hasMediaStreamInfo => mediaStreamInfoSet != null;
 
   @override
@@ -27,14 +30,16 @@ class AppState {
           history == other.history &&
           navigationDrawerIndex == other.navigationDrawerIndex &&
           video == other.video &&
-          mediaStreamInfoSet == other.mediaStreamInfoSet);
+          mediaStreamInfoSet == other.mediaStreamInfoSet &&
+          isLoading == other.isLoading);
 
   @override
   int get hashCode =>
       history.hashCode ^
       navigationDrawerIndex.hashCode ^
       video.hashCode ^
-      mediaStreamInfoSet.hashCode;
+      mediaStreamInfoSet.hashCode ^
+      isLoading.hashCode;
 
   @override
   String toString() {
@@ -43,7 +48,8 @@ class AppState {
         ' navigationDrawerIndex: $navigationDrawerIndex,' +
         ' video: $video,' +
         ' mediaStreamInfoSet: $mediaStreamInfoSet,' +
-        '}';
+        ' isLoading: $isLoading'
+            '}';
   }
 
   AppState copyWith({
@@ -51,15 +57,16 @@ class AppState {
     int navigationDrawerIndex,
     Video video,
     MediaStreamInfoSet mediaStreamInfoSet,
+    bool isLoading,
   }) {
-    var state = AppState(
+    return AppState(
       history: history ?? this.history,
       navigationDrawerIndex:
           navigationDrawerIndex ?? this.navigationDrawerIndex,
       video: video ?? this.video,
       mediaStreamInfoSet: mediaStreamInfoSet ?? this.mediaStreamInfoSet,
+      isLoading: isLoading ?? this.isLoading,
     );
-    return state;
   }
 
   Map<String, dynamic> toJson() {
@@ -67,6 +74,7 @@ class AppState {
       'history': [for (final entry in history) entry.toJson()],
       'navigationDrawerIndex': this.navigationDrawerIndex,
       'video': video?.toJson(),
+      'isLoading': isLoading,
       'mediaStreamInfoSet':
           this.mediaStreamInfoSet.toString(), // TODO: Change this
     };
@@ -77,6 +85,7 @@ class AppState {
       history: HistoryEntry.fromJsonList(map['history']),
       navigationDrawerIndex: map['navigationDrawerIndex'] as int,
       video: VideoX.fromJson(map['video']),
+      isLoading: map['isLoading'] as bool,
       mediaStreamInfoSet: null, //TODO: Fix this
     );
   }
@@ -85,5 +94,10 @@ class AppState {
 }
 
 class AppInitial extends AppState {
-  const AppInitial() : super(history: const [], navigationDrawerIndex: 0);
+  const AppInitial()
+      : super(
+          history: const [],
+          navigationDrawerIndex: 0,
+          isLoading: false,
+        );
 }
