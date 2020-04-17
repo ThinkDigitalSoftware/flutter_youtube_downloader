@@ -81,9 +81,11 @@ class _SearchDrawerSectionState extends State<SearchDrawerSection> {
                     onTap: state.isLoading
                         ? null
                         : () {
-                            if (state.video.id !=
-                                YoutubeExplode.parseVideoId(videoUrl)) {
-                              submit(videoUrl);
+                            if (_formKey.currentState.validate()) {
+                              if (state?.video?.id !=
+                                  YoutubeExplode.parseVideoId(videoUrl)) {
+                                submit(videoUrl);
+                              }
                             }
                           },
                   ),

@@ -27,10 +27,14 @@ dependencies:
       url: git://github.com/google/flutter-desktop-embedding.git
       path: plugins/file_chooser
       ref: 4ee135c
+  path_provider: ^1.6.5
+  dio: ^3.0.9
+  conditional_wrapper: ^1.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  test: ^1.14.2
 
 
 flutter:

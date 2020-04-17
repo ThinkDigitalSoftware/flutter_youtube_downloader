@@ -7,6 +7,37 @@ class AppState {
   final Video video;
   final MediaStreamInfoSet mediaStreamInfoSet;
   final bool isLoading;
+  final bool isDownloading;
+  final DragMediaType mediaTypeBeingDragged;
+
+  bool get hasVideo => video != null;
+
+  bool get hasMediaStreamInfo => mediaStreamInfoSet != null;
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (history != null)
+        'history': [for (final entry in history) entry.toJson()],
+      'navigationDrawerIndex': this.navigationDrawerIndex,
+      'video': video?.toJson(),
+      'isLoading': isLoading,
+      'isDownloading': isDownloading,
+      'mediaStreamInfoSet':
+          this.mediaStreamInfoSet.toString(), // TODO: Change this
+    };
+  }
+
+  factory AppState.fromJson(Map<String, dynamic> map) {
+    return AppState(
+        history: HistoryEntry.fromJsonList(map['history']),
+        navigationDrawerIndex: map['navigationDrawerIndex'] as int,
+        video: VideoX.fromJson(map['video']),
+        isLoading: map['isLoading'] as bool,
+        isDownloading: map['isDownloading'] as bool,
+        mediaStreamInfoSet: null,
+        //TODO: Fix this
+        mediaTypeBeingDragged: null);
+  }
 
 //<editor-fold desc="Data Methods" defaultstate="collapsed">
 
@@ -16,11 +47,9 @@ class AppState {
     this.video,
     this.mediaStreamInfoSet,
     @required this.isLoading,
-  });
-
-  bool get hasVideo => video != null;
-
-  bool get hasMediaStreamInfo => mediaStreamInfoSet != null;
+    @required this.isDownloading,
+    @required this.mediaTypeBeingDragged,
+  }) : assert(isLoading != null && isDownloading != null);
 
   @override
   bool operator ==(Object other) =>
@@ -31,7 +60,9 @@ class AppState {
           navigationDrawerIndex == other.navigationDrawerIndex &&
           video == other.video &&
           mediaStreamInfoSet == other.mediaStreamInfoSet &&
-          isLoading == other.isLoading);
+          isLoading == other.isLoading &&
+          isDownloading == other.isDownloading &&
+          mediaTypeBeingDragged == other.mediaTypeBeingDragged);
 
   @override
   int get hashCode =>
@@ -39,7 +70,9 @@ class AppState {
       navigationDrawerIndex.hashCode ^
       video.hashCode ^
       mediaStreamInfoSet.hashCode ^
-      isLoading.hashCode;
+      isLoading.hashCode ^
+      isDownloading.hashCode ^
+      mediaTypeBeingDragged.hashCode;
 
   @override
   String toString() {
@@ -48,8 +81,9 @@ class AppState {
         ' navigationDrawerIndex: $navigationDrawerIndex,' +
         ' video: $video,' +
         ' mediaStreamInfoSet: $mediaStreamInfoSet,' +
-        ' isLoading: $isLoading'
-            '}';
+        ' isLoading: $isLoading,' +
+        ' isDownloading: $isDownloading,' +
+        '}';
   }
 
   AppState copyWith({
@@ -58,35 +92,33 @@ class AppState {
     Video video,
     MediaStreamInfoSet mediaStreamInfoSet,
     bool isLoading,
+    bool isDownloading,
+    DragMediaType mediaTypeBeingDragged,
   }) {
-    return AppState(
+    return new AppState(
       history: history ?? this.history,
       navigationDrawerIndex:
           navigationDrawerIndex ?? this.navigationDrawerIndex,
       video: video ?? this.video,
       mediaStreamInfoSet: mediaStreamInfoSet ?? this.mediaStreamInfoSet,
       isLoading: isLoading ?? this.isLoading,
+      isDownloading: isDownloading ?? this.isDownloading,
+      mediaTypeBeingDragged:
+          mediaTypeBeingDragged ?? this.mediaTypeBeingDragged,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'history': [for (final entry in history) entry.toJson()],
-      'navigationDrawerIndex': this.navigationDrawerIndex,
-      'video': video?.toJson(),
-      'isLoading': isLoading,
-      'mediaStreamInfoSet':
-          this.mediaStreamInfoSet.toString(), // TODO: Change this
-    };
-  }
-
-  factory AppState.fromJson(Map<String, dynamic> map) {
-    return new AppState(
-      history: HistoryEntry.fromJsonList(map['history']),
-      navigationDrawerIndex: map['navigationDrawerIndex'] as int,
-      video: VideoX.fromJson(map['video']),
-      isLoading: map['isLoading'] as bool,
-      mediaStreamInfoSet: null, //TODO: Fix this
+  AppState nullableCopyWith({
+    DragMediaType mediaTypeBeingDragged,
+  }) {
+    return AppState(
+      history: history,
+      navigationDrawerIndex: navigationDrawerIndex,
+      video: video,
+      mediaStreamInfoSet: mediaStreamInfoSet,
+      isLoading: isLoading,
+      isDownloading: isDownloading,
+      mediaTypeBeingDragged: mediaTypeBeingDragged,
     );
   }
 
@@ -99,5 +131,7 @@ class AppInitial extends AppState {
           history: const [],
           navigationDrawerIndex: 0,
           isLoading: false,
+          isDownloading: false,
+          mediaTypeBeingDragged: null,
         );
 }

@@ -88,3 +88,25 @@ extension ContainerX on Container {
 extension AudioEncodingX on AudioEncoding {
   String get extension => toString().substring(toString().lastIndexOf(('.')));
 }
+
+extension MuxedStreamInfoX on MuxedStreamInfo {
+  Map<String, dynamic> toMap() {
+    return {
+      'audioEncoding': this.audioEncoding,
+      'videoEncoding': this.videoEncoding,
+      'videoQualityLabel': this.videoQualityLabel,
+      'videoQuality': this.videoQuality,
+      'videoResolution': this.videoResolution,
+    };
+  }
+
+//  static MuxedStreamInfo fromMap(Map<String, dynamic> map) {
+//    return new MuxedStreamInfo(
+//      AudioEncoding.fromJson(map['audioEncoding']),
+//      VideoEncoding.fromJson(map['videoEncoding']),
+//      map['videoQualityLabel'] as String,
+//       VideoQuality.fromJson(map['videoQuality']),
+//      VideoResolution.fromJson(map['videoResolution']),
+//    );
+//  }
+}

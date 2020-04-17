@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter_youtube_downloader/constants.dart';
 import 'package:flutter_youtube_downloader/format_list_view.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -7,16 +8,20 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_youtube_downloader/bloc/app_bloc.dart';
+import 'package:flutter_youtube_downloader/format_tile.dart';
 import 'package:flutter_youtube_downloader/widgets/search_drawer_section.dart';
 import 'package:flutter_youtube_downloader/widgets/video_history_list.dart';
 import 'package:hive/hive.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:flutter_youtube_downloader/extensions.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart' hide Container;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Hive.init(Directory.current.path);
+  var directory = await getApplicationDocumentsDirectory();
+  Hive.init(directory.path);
+  print(directory.path);
   await Hive.openBox('database');
 
   BlocSupervisor.delegate = await HydratedBlocDelegate.build();
@@ -55,6 +60,12 @@ class _MyHomePageState extends State<MyHomePage>
     with SingleTickerProviderStateMixin {
   final TextEditingController urlController = TextEditingController();
   AnimationController animationController;
+  AudioStreamInfo _audioStreamInfoToMerge;
+  VideoStreamInfo _videoStreamInfoToMerge;
+
+  double _videoStreamDropTargetElevation = 0;
+
+  double _audioStreamDropTargetElevation = 0;
 
   @override
   void initState() {
@@ -78,17 +89,32 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   Widget build(BuildContext context) {
+    const double dropTargetHeight = 100;
     return BlocConsumer<AppBloc, AppState>(
-      listenWhen: (oldState, newState) =>
-          oldState.isLoading != newState.isLoading,
+      listenWhen: (oldState, newState) {
+        return oldState.isLoading != newState.isLoading ||
+            oldState.mediaTypeBeingDragged != newState.mediaTypeBeingDragged;
+      },
       listener: (context, state) async {
         if (state.isLoading && !animationController.isAnimating) {
           animationController.repeat(reverse: true);
           await appBloc.firstWhere((appState) => appState.isLoading == false);
           animationController.reverse();
         }
+
+        setState(() {
+          if (state.mediaTypeBeingDragged == DragMediaType.audio) {
+            _audioStreamDropTargetElevation = 1;
+          } else if (state.mediaTypeBeingDragged == DragMediaType.video) {
+            _videoStreamDropTargetElevation = 1;
+          } else {
+            _audioStreamDropTargetElevation = 0;
+            _videoStreamDropTargetElevation = 0;
+          }
+        });
       },
       builder: (BuildContext context, AppState state) {
+        const padding = 10.0;
         return Scaffold(
           appBar: AppBar(
             title: Text(widget.title),
@@ -166,48 +192,228 @@ class _MyHomePageState extends State<MyHomePage>
                         ),
                       if (state.hasMediaStreamInfo)
                         Expanded(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Padding(
+                            padding: const EdgeInsets.all(padding),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: FormatListView(
+                                    title: 'Video with Audio',
+                                    mediaStreams:
+                                        state.mediaStreamInfoSet.muxed,
+                                    onPressed: (
+                                      MediaStreamInfo format,
+                                    ) async {
+                                      await appBloc.downloadVideo(
+                                          video: state.video,
+                                          format: format,
+                                          onReceiveProgress: (count, total) {
+                                            print('$count/$total');
+                                          });
+                                    },
+                                  ),
+                                ),
+                                Expanded(
+                                  child: FormatListView(
+                                      title: 'Video Only',
+                                      mediaStreams:
+                                          state.mediaStreamInfoSet.video,
+                                      onPressed:
+                                          (MediaStreamInfo format) async {
+                                        await appBloc.downloadVideo(
+                                            video: state.video,
+                                            format: format,
+                                            onReceiveProgress: (count, total) {
+                                              print('$count/$total');
+                                            });
+                                      },
+                                      onDragStarted: (DragMediaType mediaType) {
+                                        appBloc.raiseDropTarget(mediaType);
+                                      }),
+                                ),
+                                Expanded(
+                                  child: FormatListView(
+                                      title: 'Audio only',
+                                      mediaStreams:
+                                          state.mediaStreamInfoSet.audio,
+                                      onPressed:
+                                          (MediaStreamInfo format) async {
+                                        await appBloc.downloadVideo(
+                                            video: state.video,
+                                            format: format,
+                                            onReceiveProgress: (count, total) {
+                                              print('$count/$total');
+                                            });
+                                      },
+                                      onDragStarted: (DragMediaType mediaType) {
+                                        appBloc.raiseDropTarget(mediaType);
+                                      }),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      Padding(
+                        padding: EdgeInsets.all(10),
+                        child: Card(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Expanded(
-                                child: FormatListView(
-                                  title: 'Video with Audio',
-                                  mediaStreams: state.mediaStreamInfoSet.muxed,
-                                  onPressed: (MediaStreamInfo format) async {
-                                    await appBloc.downloadVideo(
-                                      video: state.video,
-                                      format: format,
-                                    );
-                                  },
+                              Material(
+                                color: Theme.of(context).cardColor,
+                                elevation: elevation,
+                                child: Container(
+                                  width: double.infinity,
+                                  alignment: Alignment.center,
+                                  padding: const EdgeInsets.all(padding),
+                                  child: Text('Merge'),
                                 ),
                               ),
-                              Expanded(
-                                child: FormatListView(
-                                  title: 'Video Only',
-                                  mediaStreams: state.mediaStreamInfoSet.video,
-                                  onPressed: (MediaStreamInfo format) async {
-                                    await appBloc.downloadVideo(
-                                      video: state.video,
-                                      format: format,
-                                    );
-                                  },
+                              Padding(
+                                padding: const EdgeInsets.all(padding),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: DragTarget<MediaStreamInfo>(
+                                        builder: (BuildContext context,
+                                            List<MediaStreamInfo> candidateData,
+                                            List<dynamic> rejectedData) {
+                                          Widget child;
+                                          bool hasVideoInfo =
+                                              _videoStreamInfoToMerge != null;
+                                          if (!hasVideoInfo) {
+                                            child = Text('Drop Video Here');
+                                          } else {
+                                            child = FormatTile(
+                                              format: _videoStreamInfoToMerge,
+                                            );
+                                          }
+                                          return Card(
+                                            elevation:
+                                                _videoStreamDropTargetElevation,
+                                            child: Container(
+                                              height: dropTargetHeight,
+                                              alignment: Alignment.center,
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                        onWillAccept: (MediaStreamInfo data) {
+                                          if (data is VideoStreamInfo) {
+                                            setState(() {
+                                              _videoStreamDropTargetElevation =
+                                                  5;
+                                            });
+                                            return true;
+                                          } else {
+                                            return false;
+                                          }
+                                        },
+                                        onAccept:
+                                            (MediaStreamInfo videoStreamInfo) {
+                                          setState(() {
+                                            _videoStreamInfoToMerge =
+                                                videoStreamInfo;
+                                          });
+                                        },
+                                        onLeave: (_) {
+                                          if (_videoStreamInfoToMerge == null) {
+                                            setState(() {
+                                              _videoStreamDropTargetElevation =
+                                                  0;
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.merge_type,
+                                      color: _getMergeIconColor(),
+                                    ),
+                                    Expanded(
+                                      child: DragTarget<MediaStreamInfo>(
+                                        builder: (BuildContext context,
+                                            List<MediaStreamInfo> candidateData,
+                                            List<dynamic> rejectedData) {
+                                          Widget child;
+                                          var hasAudioInfo =
+                                              _audioStreamInfoToMerge != null;
+                                          if (hasAudioInfo) {
+                                            child = FormatTile(
+                                              format: _audioStreamInfoToMerge,
+                                            );
+                                          } else {
+                                            child = Text('Drop Audio Here');
+                                          }
+                                          return Card(
+                                            elevation:
+                                                _audioStreamDropTargetElevation,
+                                            child: Container(
+                                              alignment: Alignment.center,
+                                              height: dropTargetHeight,
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                        onWillAccept: (data) {
+                                          if (data is AudioStreamInfo) {
+                                            setState(() {
+                                              _audioStreamDropTargetElevation =
+                                                  5;
+                                            });
+                                            return true;
+                                          } else {
+                                            return false;
+                                          }
+                                        },
+                                        onAccept: (audioStreamInfo) =>
+                                            setState(() {
+                                          _audioStreamInfoToMerge =
+                                              audioStreamInfo;
+                                        }),
+                                        onLeave: (_) {
+                                          if (_audioStreamInfoToMerge == null) {
+                                            setState(() {
+                                              _audioStreamDropTargetElevation =
+                                                  0;
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              Expanded(
-                                child: FormatListView(
-                                  title: 'Audio only',
-                                  mediaStreams: state.mediaStreamInfoSet.audio,
-                                  onPressed: (MediaStreamInfo format) async {
-                                    await appBloc.downloadVideo(
-                                      video: state.video,
-                                      format: format,
-                                    );
-                                  },
-                                ),
-                              ),
+                              ButtonBar(
+                                children: [
+                                  OutlineButton(
+                                    child: Text('Clear'),
+                                    onPressed: () {
+                                      setState(() {
+                                        _audioStreamInfoToMerge = null;
+                                        _audioStreamDropTargetElevation = 0;
+                                        _videoStreamInfoToMerge = null;
+                                        _videoStreamDropTargetElevation = 0;
+                                      });
+                                    },
+                                  ),
+                                  RaisedButton.icon(
+                                      onPressed: () {
+                                        appBloc.downloadAndMerge(
+                                            videoFormat:
+                                                _videoStreamInfoToMerge,
+                                            audioFormat:
+                                                _audioStreamInfoToMerge);
+                                      },
+                                      icon: Icon(Icons.merge_type),
+                                      label: Text('Download and Merge'))
+                                ],
+                              )
                             ],
                           ),
-                        )
+                        ),
+                      )
                     ],
                   ),
                 ),
@@ -233,6 +439,14 @@ class _MyHomePageState extends State<MyHomePage>
             appBloc.getVideoDetails(entry.url);
           },
         );
+    }
+  }
+
+  Color _getMergeIconColor() {
+    if (_videoStreamInfoToMerge != null && _audioStreamInfoToMerge != null) {
+      return Theme.of(context).accentColor;
+    } else {
+      return Theme.of(context).iconTheme.color;
     }
   }
 }

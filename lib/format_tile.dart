@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_youtube_downloader/format_list_view.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:flutter_youtube_downloader/extensions.dart';
 
@@ -7,37 +8,56 @@ class FormatTile extends StatelessWidget {
     Key key,
     @required this.format,
     this.trailing,
+    this.footer,
+    this.progressStream,
   }) : super(key: key);
 
   final MediaStreamInfo format;
   final Widget trailing;
+  final Widget footer;
+  final Stream<Progress> progressStream;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: Text.rich(
-        TextSpan(
-          text: 'Format: ',
-          children: [
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          title: Text.rich(
             TextSpan(
-              text: _getFormatText(),
-              style: TextStyle(fontWeight: FontWeight.w200),
-            )
-          ],
-        ),
-      ),
-      subtitle: Text.rich(
-        TextSpan(
-          text: '${format is AudioStreamInfo ? 'Bitrate' : 'Resolution'}: ',
-          children: [
+              text: 'Format: ',
+              children: [
+                TextSpan(
+                  text: _getFormatText(),
+                  style: TextStyle(fontWeight: FontWeight.w200),
+                )
+              ],
+            ),
+          ),
+          subtitle: Text.rich(
             TextSpan(
-              text: _getQualityText(),
-              style: TextStyle(fontWeight: FontWeight.w200),
-            )
-          ],
+              text: '${format is AudioStreamInfo ? 'Bitrate' : 'Resolution'}: ',
+              children: [
+                TextSpan(
+                  text: _getQualityText(),
+                  style: TextStyle(fontWeight: FontWeight.w200),
+                )
+              ],
+            ),
+          ),
+          trailing: trailing,
         ),
-      ),
-      trailing: trailing,
+        if (progressStream != null)
+          StreamBuilder<Progress>(
+            stream: progressStream,
+            initialData: Progress(0, 1),
+            builder: (context, snapshot) {
+              return LinearProgressIndicator(
+                value: snapshot.data.ratio,
+              );
+            },
+          )
+      ],
     );
   }
 
