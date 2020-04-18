@@ -8,8 +8,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_youtube_downloader/bloc/history_entry.dart';
 import 'package:flutter_youtube_downloader/constants.dart';
 import 'package:flutter_youtube_downloader/extensions.dart';
-import 'package:flutter_youtube_downloader/format_list_view.dart';
+import 'package:flutter_youtube_downloader/services/file_manager.dart';
+import 'package:flutter_youtube_downloader/widgets/format_list_view.dart';
 import 'package:flutter_youtube_downloader/services/database.dart';
+import 'package:flutter_youtube_downloader/services/youtube_dl_manager.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:meta/meta.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
@@ -23,7 +25,11 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
   final DatabaseService databaseService =
       DatabaseService(directory: Directory.current);
 
+  Downloads get downloads => databaseService.downloads;
   final Dio _dio = Dio();
+  final YoutubeDL youtubeDL = YoutubeDL();
+
+  StreamController<String> downloadController = StreamController.broadcast();
 
   static AppBloc of(BuildContext context) => BlocProvider.of<AppBloc>(context);
 
@@ -86,7 +92,6 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
   }
 
   Future<bool> downloadVideo({
-    @required Video video,
     @required MediaStreamInfo format,
     ProgressCallback onReceiveProgress,
   }) async {
@@ -114,14 +119,20 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
       add(YieldState(state.copyWith(isDownloading: true)));
       final Response result =
           await _dio.get(url, onReceiveProgress: (count, total) {
-        downloadController.add(Progress(count, total));
+        downloadController.add(Progress(count.toDouble(), total.toDouble()));
       }, options: Options(responseType: ResponseType.bytes));
       downloadController.close();
 
       add(YieldState(state.copyWith(isDownloading: false)));
 
       await file.writeAsBytes(result.data, flush: true);
-      databaseService.write(MediaDownload(path: path, videoId: video.id));
+      databaseService.write(
+        MediaDownload(
+          path: path,
+          video: state.video,
+          thumbnailUrl: state.video.thumbnailSet.lowResUrl,
+        ),
+      );
       return true;
     }
 
@@ -162,10 +173,12 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
 
     final List<Response> downloads = await Future.wait([
       _dio.get(audioFormat.url.toString(), onReceiveProgress: (count, total) {
-        audioDownloadController.add(Progress(count, total));
+        audioDownloadController
+            .add(Progress(count.toDouble(), total.toDouble()));
       }, options: Options(responseType: ResponseType.bytes)),
       _dio.get(videoFormat.url.toString(), onReceiveProgress: (count, total) {
-        videoDownloadController.add(Progress(count, total));
+        videoDownloadController
+            .add(Progress(count.toDouble(), total.toDouble()));
       }, options: Options(responseType: ResponseType.bytes))
     ]);
 
@@ -183,6 +196,42 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
     audioTemp.writeAsBytesSync(audioDownloadResult.data);
     videoTemp.writeAsBytesSync(videoDownloadResult.data);
 
-    // merge using ffmpeg
+    //TODO: merge using ffmpeg
+  }
+
+  Future<void> downloadAndMergeBest(String url) async {
+    final videoFormat = state.mediaStreamInfoSet.video.first;
+
+    var extension = videoFormat.container.extension;
+    String suggestedFileName =
+        '${state.video.title} - ${videoFormat.videoResolution}$extension';
+
+    final FileChooserResult fileChooserResult =
+        await showOpenPanel(canSelectDirectories: true);
+
+    if (!fileChooserResult.canceled) {
+      final String path = fileChooserResult.paths.first;
+      final outputFile = await youtubeDL.downloadBestAudioVideo(url,
+          outputPath: path, outputStreamController: downloadController);
+
+      // write to db
+      databaseService.write(MediaDownload(
+          path: outputFile.path,
+          video: state.video,
+          thumbnailUrl: state.video.thumbnailSet.lowResUrl));
+    }
+  }
+
+  @override
+  Future<void> close() {
+    downloadController.close();
+    return super.close();
+  }
+
+  void showInFinder(MediaDownload download) {
+    FileSystemManager.openFile(
+      download.containingDirectoryPath,
+      openContainingDirectory: true,
+    );
   }
 }

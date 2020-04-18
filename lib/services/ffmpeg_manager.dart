@@ -1,11 +1,18 @@
 import 'dart:io';
 
+import 'package:flutter_youtube_downloader/services/system_process.dart';
 import 'package:meta/meta.dart';
 
 class FFMpeg {
-  static String get help => _run('-h');
+  final SystemProcess process = SystemProcess('ffmpeg');
 
-  static merge(String audioPath, String videoPath,
+  FFMpeg();
+
+  String get help => run(['-h']);
+
+  String run([List<String> arguments]) => process.runSync(arguments: arguments);
+
+  void merge(String audioPath, String videoPath,
       {@required String destinationPath}) {
     final File audioFile = File(audioPath);
     final File videoFile = File(videoPath);
@@ -17,7 +24,8 @@ class FFMpeg {
     if (!videoFile.existsSync()) {
       throw FileSystemException('Video File not found', videoPath);
     }
-    final result = _run('-i', [
+    final result = process.runSync(arguments: [
+      '-i',
       videoPath,
       '-i',
       audioPath,
@@ -28,11 +36,5 @@ class FFMpeg {
       destinationPath
     ]);
     return;
-  }
-
-  static String _run(String command, [List<String> parameters]) {
-    return Process.runSync('ffmpeg', [command, ...parameters ?? []])
-        .stdout
-        .toString();
   }
 }

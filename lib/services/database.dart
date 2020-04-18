@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
 import 'package:meta/meta.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'package:flutter_youtube_downloader/extensions.dart';
 
 class DatabaseService {
   final Directory directory;
@@ -9,8 +11,10 @@ class DatabaseService {
   Downloads downloads;
 
   DatabaseService({@required this.directory}) : _box = Hive.box('database') {
-    Map downloadJson = _box.get('downloads');
-    downloads = Downloads.fromJson(downloadJson);
+    downloads = Downloads.fromJson(_box.get('downloads'));
+    _box.watch(key: 'downloads').listen((event) {
+      downloads = Downloads.fromJson(event.value);
+    });
     _scan(downloads);
   }
 
@@ -25,6 +29,7 @@ class DatabaseService {
         removed.add(download);
       }
     }
+
     this.downloads = Downloads(existing: verifiedDownloads, removed: removed);
     _box.put('downloads', downloads.toJson());
   }
@@ -34,19 +39,29 @@ class DatabaseService {
     downloads.existing.add(mediaDownload);
     _box.put('downloads', downloads.toJson());
   }
+
+  void clearDownloads() {
+    _box.clear();
+  }
 }
 
 class MediaDownload {
-  final String videoId;
   final String path;
+  final String thumbnailUrl;
+  final Video video;
 
   File get file => File(path);
+
+  Directory get containingDirectory => file.parent;
+
+  String get containingDirectoryPath => containingDirectory.path;
 
 //<editor-fold desc="Data Methods" defaultstate="collapsed">
 
   const MediaDownload({
-    @required this.videoId,
     @required this.path,
+    @required this.thumbnailUrl,
+    @required this.video,
   });
 
   @override
@@ -54,38 +69,47 @@ class MediaDownload {
       identical(this, other) ||
       (other is MediaDownload &&
           runtimeType == other.runtimeType &&
-          videoId == other.videoId &&
-          path == other.path);
+          path == other.path &&
+          thumbnailUrl == other.thumbnailUrl &&
+          video == other.video);
 
   @override
-  int get hashCode => videoId.hashCode ^ path.hashCode;
+  int get hashCode => path.hashCode ^ thumbnailUrl.hashCode ^ video.hashCode;
 
   @override
   String toString() {
-    return 'MediaDownload{' + ' videoId: $videoId,' + ' path: $path,' + '}';
+    return 'MediaDownload{' +
+        ' path: $path,' +
+        ' thumbnailUrl: $thumbnailUrl,' +
+        ' video: $video,' +
+        '}';
   }
 
   MediaDownload copyWith({
-    String videoId,
     String path,
+    String thumbnailUrl,
+    Video video,
   }) {
-    return new MediaDownload(
-      videoId: videoId ?? this.videoId,
+    return MediaDownload(
       path: path ?? this.path,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      video: video ?? this.video,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'videoId': this.videoId,
       'path': this.path,
+      'thumbnailUrl': this.thumbnailUrl,
+      'video': this.video.toJson(),
     };
   }
 
-  factory MediaDownload.fromJson(Map<dynamic, dynamic> map) {
-    return MediaDownload(
-      videoId: map['videoId'] as String,
+  factory MediaDownload.fromJson(Map<String, dynamic> map) {
+    return new MediaDownload(
       path: map['path'] as String,
+      thumbnailUrl: map['thumbnailUrl'] as String,
+      video: VideoX.fromJson(map['video']),
     );
   }
 
@@ -96,12 +120,18 @@ class Downloads {
   final List<MediaDownload> existing;
   final List<MediaDownload> removed;
 
+  MediaDownload get last => existing.last;
+
+  List<MediaDownload> get allDownloads => [...existing, ...removed];
+
 //<editor-fold desc="Data Methods" defaultstate="collapsed">
 
   const Downloads({
     @required this.existing,
     @required this.removed,
   });
+
+  int get length => existing.length + removed.length;
 
   @override
   bool operator ==(Object other) =>

@@ -1,19 +1,19 @@
-import 'dart:io';
 import 'package:flutter_youtube_downloader/constants.dart';
-import 'package:flutter_youtube_downloader/format_list_view.dart';
+import 'package:flutter_youtube_downloader/widgets/downloads_view.dart';
+import 'package:flutter_youtube_downloader/widgets/format_list_view.dart';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_youtube_downloader/bloc/history_entry.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_youtube_downloader/bloc/app_bloc.dart';
-import 'package:flutter_youtube_downloader/format_tile.dart';
+import 'package:flutter_youtube_downloader/widgets/format_list_view_section.dart';
+import 'package:flutter_youtube_downloader/widgets/format_tile.dart';
 import 'package:flutter_youtube_downloader/widgets/search_drawer_section.dart';
+import 'package:flutter_youtube_downloader/widgets/video_details_section.dart';
 import 'package:flutter_youtube_downloader/widgets/video_history_list.dart';
 import 'package:hive/hive.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
-import 'package:flutter_youtube_downloader/extensions.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart' hide Container;
 
@@ -56,10 +56,10 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage>
-    with SingleTickerProviderStateMixin {
+class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   final TextEditingController urlController = TextEditingController();
-  AnimationController animationController;
+  AnimationController searchAnimationController;
+  AnimationController showInFinderAnimationController;
   AudioStreamInfo _audioStreamInfoToMerge;
   VideoStreamInfo _videoStreamInfoToMerge;
 
@@ -69,9 +69,16 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   void initState() {
-    animationController = AnimationController(
+    searchAnimationController = AnimationController(
       vsync: this,
       duration: Duration(seconds: 2),
+      lowerBound: 0,
+      upperBound: 1,
+    );
+
+    showInFinderAnimationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 20),
       lowerBound: 0,
       upperBound: 1,
     );
@@ -81,7 +88,7 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   void dispose() {
     urlController.dispose();
-    animationController.dispose();
+    searchAnimationController.dispose();
     super.dispose();
   }
 
@@ -96,10 +103,10 @@ class _MyHomePageState extends State<MyHomePage>
             oldState.mediaTypeBeingDragged != newState.mediaTypeBeingDragged;
       },
       listener: (context, state) async {
-        if (state.isLoading && !animationController.isAnimating) {
-          animationController.repeat(reverse: true);
+        if (state.isLoading && !searchAnimationController.isAnimating) {
+          searchAnimationController.repeat(reverse: true);
           await appBloc.firstWhere((appState) => appState.isLoading == false);
-          animationController.reverse();
+          searchAnimationController.reverse();
         }
 
         setState(() {
@@ -124,16 +131,29 @@ class _MyHomePageState extends State<MyHomePage>
               NavigationRail(
                 destinations: [
                   NavigationRailDestination(
-                      icon: RotationTransition(
-                        turns: animationController,
-                        child: AnimatedIcon(
-                          icon: AnimatedIcons.search_ellipsis,
-                          progress: animationController,
-                        ),
+                    icon: RotationTransition(
+                      turns: searchAnimationController,
+                      child: AnimatedIcon(
+                        icon: AnimatedIcons.search_ellipsis,
+                        progress: searchAnimationController,
                       ),
-                      label: Text('Search')),
+                    ),
+                    label: Text('Search'),
+                  ),
                   NavigationRailDestination(
-                      icon: Icon(Icons.history), label: Text('History')),
+                    icon: Icon(Icons.history),
+                    label: Text('History'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.view_list,
+                        color: !state.hasMediaStreamInfo ? Colors.grey : null),
+                    label: Text('Formats'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.format_list_numbered,
+                        color: !state.hasMediaStreamInfo ? Colors.grey : null),
+                    label: Text('Downloads'),
+                  ),
                 ],
                 selectedIndex: state.navigationDrawerIndex,
                 labelType: NavigationRailLabelType.selected,
@@ -143,11 +163,12 @@ class _MyHomePageState extends State<MyHomePage>
               ),
               Drawer(
                 child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: AnimatedSwitcher(
-                      duration: kThemeAnimationDuration,
-                      child: getDrawerWidget(state),
-                    )),
+                  padding: const EdgeInsets.all(10),
+                  child: AnimatedSwitcher(
+                    duration: kThemeAnimationDuration,
+                    child: getDrawerWidget(state),
+                  ),
+                ),
               ),
               Expanded(
                 child: Container(
@@ -157,260 +178,298 @@ class _MyHomePageState extends State<MyHomePage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (state.hasVideo)
-                        Container(
+                        Expanded(child: VideoDetailsSection()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                        child: Divider(),
+                      ),
+                      Expanded(
+//                        flex: 2,
+                        child: Padding(
                           padding: EdgeInsets.all(10),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Card(
-                                child: CachedNetworkImage(
-                                  imageUrl:
-                                      state.video.thumbnailSet.mediumResUrl,
-                                  fit: BoxFit.fitHeight,
+                          child: Card(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Material(
+                                  color: Theme.of(context).cardColor,
+                                  elevation: elevation,
+                                  child: Container(
+                                    width: double.infinity,
+                                    alignment: Alignment.center,
+                                    padding: const EdgeInsets.all(padding),
+                                    child: Text('Merge'),
+                                  ),
                                 ),
-                                elevation: 8,
-                              ),
-                              Card(
-                                child: Container(
-                                  padding: EdgeInsets.all(10),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: <Widget>[
-                                      ListTile(
-                                        title: Text(state.video.title),
-                                        subtitle: Text(
-                                            '${state.video.statistics.viewCount} views • ${state.video.uploadDate.toMdY()}'),
+                                Padding(
+                                  padding: const EdgeInsets.all(padding),
+                                  child: Row(
+                                    children: [
+                                      //TODO @ThinkDigitalSoftware: Break these two DropTargets into separate widgets.
+                                      Expanded(
+                                        // Video DropTarget
+                                        child: DragTarget<MediaStreamInfo>(
+                                          builder: (BuildContext context,
+                                              List<MediaStreamInfo>
+                                                  candidateData,
+                                              List<dynamic> rejectedData) {
+                                            Widget child;
+                                            bool hasVideoInfo =
+                                                _videoStreamInfoToMerge != null;
+                                            if (!hasVideoInfo) {
+                                              child = Text('Drop Video Here',
+                                                  style:
+                                                      _videoStreamDropTargetElevation !=
+                                                              0
+                                                          ? TextStyle(
+                                                              color: Theme.of(
+                                                                      context)
+                                                                  .accentColor,
+                                                            )
+                                                          : null);
+                                            } else {
+                                              child = FormatTile(
+                                                format: _videoStreamInfoToMerge,
+                                              );
+                                            }
+                                            return Card(
+                                              elevation:
+                                                  _videoStreamDropTargetElevation,
+                                              child: Container(
+                                                height: dropTargetHeight,
+                                                alignment: Alignment.center,
+                                                child: child,
+                                              ),
+                                            );
+                                          },
+                                          onWillAccept: (MediaStreamInfo data) {
+                                            if (data is VideoStreamInfo) {
+                                              setState(() {
+                                                _videoStreamDropTargetElevation =
+                                                    5;
+                                              });
+                                              return true;
+                                            } else {
+                                              return false;
+                                            }
+                                          },
+                                          onAccept: (MediaStreamInfo
+                                              videoStreamInfo) {
+                                            setState(() {
+                                              _videoStreamInfoToMerge =
+                                                  videoStreamInfo;
+                                            });
+                                          },
+                                          onLeave: (_) {
+                                            if (_videoStreamInfoToMerge ==
+                                                null) {
+                                              setState(() {
+                                                _videoStreamDropTargetElevation =
+                                                    0;
+                                              });
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.merge_type,
+                                        color: _getMergeIconColor(),
+                                      ),
+                                      Expanded(
+                                        child: DragTarget<MediaStreamInfo>(
+                                          // Audio DropTarget
+                                          builder: (BuildContext context,
+                                              List<MediaStreamInfo>
+                                                  candidateData,
+                                              List<dynamic> rejectedData) {
+                                            Widget child;
+                                            var hasAudioInfo =
+                                                _audioStreamInfoToMerge != null;
+                                            if (hasAudioInfo) {
+                                              child = FormatTile(
+                                                format: _audioStreamInfoToMerge,
+                                              );
+                                            } else {
+                                              child = Text(
+                                                'Drop Audio Here',
+                                                style:
+                                                    _audioStreamDropTargetElevation !=
+                                                            0
+                                                        ? TextStyle(
+                                                            color: Theme.of(
+                                                                    context)
+                                                                .accentColor,
+                                                          )
+                                                        : null,
+                                              );
+                                            }
+                                            return Card(
+                                              elevation:
+                                                  _audioStreamDropTargetElevation,
+                                              child: Container(
+                                                alignment: Alignment.center,
+                                                height: dropTargetHeight,
+                                                child: child,
+                                              ),
+                                            );
+                                          },
+                                          onWillAccept: (data) {
+                                            if (data is AudioStreamInfo) {
+                                              setState(() {
+                                                _audioStreamDropTargetElevation =
+                                                    5;
+                                              });
+                                              return true;
+                                            } else {
+                                              return false;
+                                            }
+                                          },
+                                          onAccept: (audioStreamInfo) =>
+                                              setState(() {
+                                            _audioStreamInfoToMerge =
+                                                audioStreamInfo;
+                                          }),
+                                          onLeave: (_) {
+                                            if (_audioStreamInfoToMerge ==
+                                                null) {
+                                              setState(() {
+                                                _audioStreamDropTargetElevation =
+                                                    0;
+                                              });
+                                            }
+                                          },
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              )
-                            ],
-                          ),
-                        ),
-                      if (state.hasMediaStreamInfo)
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(padding),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: FormatListView(
-                                    title: 'Video with Audio',
-                                    mediaStreams:
-                                        state.mediaStreamInfoSet.muxed,
-                                    onPressed: (
-                                      MediaStreamInfo format,
-                                    ) async {
-                                      await appBloc.downloadVideo(
-                                          video: state.video,
-                                          format: format,
-                                          onReceiveProgress: (count, total) {
-                                            print('$count/$total');
-                                          });
-                                    },
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 20),
+                                  child: Divider(),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      left: 10, right: 10, bottom: 10),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Card(
+                                          child: Container(
+                                            height: 90,
+                                            padding: EdgeInsets.all(10),
+                                            margin: EdgeInsets.all(10),
+                                            child: StreamBuilder(
+                                              stream: appBloc.downloadController
+                                                      ?.stream ??
+                                                  Stream<String>.empty(),
+                                              initialData: '',
+                                              builder: (BuildContext context,
+                                                  AsyncSnapshot<String>
+                                                      snapshot) {
+                                                String data = snapshot.data;
+                                                double
+                                                    progressIndicatorPercentage =
+                                                    _getProgressIndicatorPercentage(
+                                                        data);
+
+                                                if (progressIndicatorPercentage ==
+                                                    1.0) {
+                                                  data = 'Complete!';
+                                                }
+                                                return Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: <Widget>[
+                                                    Expanded(
+                                                        child: Row(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .spaceBetween,
+                                                      children: <Widget>[
+                                                        Padding(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                      .only(
+                                                                  top: 15.0),
+                                                          child: Text(data),
+                                                        ),
+                                                        if (data == 'Complete!')
+                                                          AnimatedBuilder(
+                                                            builder:
+                                                                (BuildContext
+                                                                        context,
+                                                                    Widget
+                                                                        child) {
+                                                              return FlatButton(
+                                                                onPressed:
+                                                                    openDownload,
+                                                                child: Text(
+                                                                    'Show in Finder'),
+                                                              );
+                                                            },
+                                                            animation:
+                                                                showInFinderAnimationController,
+                                                          ),
+                                                      ],
+                                                    )),
+                                                    LinearProgressIndicator(
+                                                      value:
+                                                          progressIndicatorPercentage,
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 10,
+                                      ),
+                                      Expanded(
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            OutlineButton(
+                                              child: Text('Clear'),
+                                              onPressed: () {
+                                                setState(() {
+                                                  _audioStreamInfoToMerge =
+                                                      null;
+                                                  _audioStreamDropTargetElevation =
+                                                      0;
+                                                  _videoStreamInfoToMerge =
+                                                      null;
+                                                  _videoStreamDropTargetElevation =
+                                                      0;
+                                                });
+                                              },
+                                            ),
+                                            RaisedButton.icon(
+                                                onPressed: downloadAndMerge(),
+                                                icon: Icon(Icons.merge_type),
+                                                label:
+                                                    Text('Download and Merge')),
+                                            RaisedButton.icon(
+                                                onPressed:
+                                                    downloadAndMergeBest(),
+                                                icon: Icon(Icons.merge_type),
+                                                label: Text('Auto-select Best'))
+                                          ],
+                                        ),
+                                      )
+                                    ],
                                   ),
-                                ),
-                                Expanded(
-                                  child: FormatListView(
-                                      title: 'Video Only',
-                                      mediaStreams:
-                                          state.mediaStreamInfoSet.video,
-                                      onPressed:
-                                          (MediaStreamInfo format) async {
-                                        await appBloc.downloadVideo(
-                                            video: state.video,
-                                            format: format,
-                                            onReceiveProgress: (count, total) {
-                                              print('$count/$total');
-                                            });
-                                      },
-                                      onDragStarted: (DragMediaType mediaType) {
-                                        appBloc.raiseDropTarget(mediaType);
-                                      }),
-                                ),
-                                Expanded(
-                                  child: FormatListView(
-                                      title: 'Audio only',
-                                      mediaStreams:
-                                          state.mediaStreamInfoSet.audio,
-                                      onPressed:
-                                          (MediaStreamInfo format) async {
-                                        await appBloc.downloadVideo(
-                                            video: state.video,
-                                            format: format,
-                                            onReceiveProgress: (count, total) {
-                                              print('$count/$total');
-                                            });
-                                      },
-                                      onDragStarted: (DragMediaType mediaType) {
-                                        appBloc.raiseDropTarget(mediaType);
-                                      }),
-                                ),
+                                )
                               ],
                             ),
-                          ),
-                        ),
-                      Padding(
-                        padding: EdgeInsets.all(10),
-                        child: Card(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Material(
-                                color: Theme.of(context).cardColor,
-                                elevation: elevation,
-                                child: Container(
-                                  width: double.infinity,
-                                  alignment: Alignment.center,
-                                  padding: const EdgeInsets.all(padding),
-                                  child: Text('Merge'),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(padding),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: DragTarget<MediaStreamInfo>(
-                                        builder: (BuildContext context,
-                                            List<MediaStreamInfo> candidateData,
-                                            List<dynamic> rejectedData) {
-                                          Widget child;
-                                          bool hasVideoInfo =
-                                              _videoStreamInfoToMerge != null;
-                                          if (!hasVideoInfo) {
-                                            child = Text('Drop Video Here');
-                                          } else {
-                                            child = FormatTile(
-                                              format: _videoStreamInfoToMerge,
-                                            );
-                                          }
-                                          return Card(
-                                            elevation:
-                                                _videoStreamDropTargetElevation,
-                                            child: Container(
-                                              height: dropTargetHeight,
-                                              alignment: Alignment.center,
-                                              child: child,
-                                            ),
-                                          );
-                                        },
-                                        onWillAccept: (MediaStreamInfo data) {
-                                          if (data is VideoStreamInfo) {
-                                            setState(() {
-                                              _videoStreamDropTargetElevation =
-                                                  5;
-                                            });
-                                            return true;
-                                          } else {
-                                            return false;
-                                          }
-                                        },
-                                        onAccept:
-                                            (MediaStreamInfo videoStreamInfo) {
-                                          setState(() {
-                                            _videoStreamInfoToMerge =
-                                                videoStreamInfo;
-                                          });
-                                        },
-                                        onLeave: (_) {
-                                          if (_videoStreamInfoToMerge == null) {
-                                            setState(() {
-                                              _videoStreamDropTargetElevation =
-                                                  0;
-                                            });
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.merge_type,
-                                      color: _getMergeIconColor(),
-                                    ),
-                                    Expanded(
-                                      child: DragTarget<MediaStreamInfo>(
-                                        builder: (BuildContext context,
-                                            List<MediaStreamInfo> candidateData,
-                                            List<dynamic> rejectedData) {
-                                          Widget child;
-                                          var hasAudioInfo =
-                                              _audioStreamInfoToMerge != null;
-                                          if (hasAudioInfo) {
-                                            child = FormatTile(
-                                              format: _audioStreamInfoToMerge,
-                                            );
-                                          } else {
-                                            child = Text('Drop Audio Here');
-                                          }
-                                          return Card(
-                                            elevation:
-                                                _audioStreamDropTargetElevation,
-                                            child: Container(
-                                              alignment: Alignment.center,
-                                              height: dropTargetHeight,
-                                              child: child,
-                                            ),
-                                          );
-                                        },
-                                        onWillAccept: (data) {
-                                          if (data is AudioStreamInfo) {
-                                            setState(() {
-                                              _audioStreamDropTargetElevation =
-                                                  5;
-                                            });
-                                            return true;
-                                          } else {
-                                            return false;
-                                          }
-                                        },
-                                        onAccept: (audioStreamInfo) =>
-                                            setState(() {
-                                          _audioStreamInfoToMerge =
-                                              audioStreamInfo;
-                                        }),
-                                        onLeave: (_) {
-                                          if (_audioStreamInfoToMerge == null) {
-                                            setState(() {
-                                              _audioStreamDropTargetElevation =
-                                                  0;
-                                            });
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              ButtonBar(
-                                children: [
-                                  OutlineButton(
-                                    child: Text('Clear'),
-                                    onPressed: () {
-                                      setState(() {
-                                        _audioStreamInfoToMerge = null;
-                                        _audioStreamDropTargetElevation = 0;
-                                        _videoStreamInfoToMerge = null;
-                                        _videoStreamDropTargetElevation = 0;
-                                      });
-                                    },
-                                  ),
-                                  RaisedButton.icon(
-                                      onPressed: () {
-                                        appBloc.downloadAndMerge(
-                                            videoFormat:
-                                                _videoStreamInfoToMerge,
-                                            audioFormat:
-                                                _audioStreamInfoToMerge);
-                                      },
-                                      icon: Icon(Icons.merge_type),
-                                      label: Text('Download and Merge'))
-                                ],
-                              )
-                            ],
                           ),
                         ),
                       )
@@ -425,12 +484,56 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
+  void openDownload() {
+    var download = appBloc.databaseService.downloads.last;
+    if (download.file.existsSync()) {
+      appBloc.showInFinder(
+        download,
+      );
+    } else {
+      showInFinderAnimationController.repeat(
+          reverse: true, period: Duration(milliseconds: 500));
+    }
+  }
+
+  double _getProgressIndicatorPercentage(String data) {
+    DownloadProgress progress = DownloadProgress.fromString(data);
+    if (data.isEmpty) {
+      return 0.0;
+    }
+    if (data.contains('downloaded') || data.startsWith('Deleting')) {
+      return 1;
+    }
+
+    return progress?.percentage;
+  }
+
+  Function downloadAndMerge() {
+    if (_videoStreamInfoToMerge != null && _audioStreamInfoToMerge != null) {
+      return () => appBloc.downloadAndMerge(
+            videoFormat: _videoStreamInfoToMerge,
+            audioFormat: _audioStreamInfoToMerge,
+          );
+    } else {
+      return null;
+    }
+  }
+
+  Function downloadAndMergeBest() {
+    String url = urlController.text;
+
+    if (url.isEmpty || YoutubeExplode.parseVideoId(url) == null) {
+      return null;
+    } else {
+      return () => appBloc.downloadAndMergeBest(url);
+    }
+  }
+
   Widget getDrawerWidget(AppState state) {
     switch (state.navigationDrawerIndex) {
       case 0:
         return SearchDrawerSection(controller: urlController);
       case 1:
-      default:
         return VideoHistoryList(
           history: state.history,
           onPressed: (HistoryEntry entry) {
@@ -439,6 +542,14 @@ class _MyHomePageState extends State<MyHomePage>
             appBloc.getVideoDetails(entry.url);
           },
         );
+      case 2:
+        return FormatListViewSection(
+          padding: 10.0,
+        );
+      case 3:
+        return DownloadsView();
+      default:
+        return Container();
     }
   }
 

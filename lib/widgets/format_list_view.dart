@@ -5,7 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_youtube_downloader/bloc/app_bloc.dart';
 import 'package:flutter_youtube_downloader/constants.dart';
-import 'package:flutter_youtube_downloader/format_tile.dart';
+import 'package:flutter_youtube_downloader/widgets/format_tile.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart' hide Container;
 
 class FormatListView extends StatelessWidget {
@@ -93,10 +93,57 @@ class FormatListView extends StatelessWidget {
 }
 
 class Progress {
-  final int count;
-  final int total;
+  final double count;
+  final double total;
 
   Progress(this.count, this.total);
 
   double get ratio => count / total;
+}
+
+class DownloadProgress extends Progress {
+  final String downloadSpeed;
+  final String totalSize;
+  final String eta;
+  final String _source;
+
+  DownloadProgress({
+    @required double count,
+    @required double total,
+    @required this.totalSize,
+    @required this.downloadSpeed,
+    @required this.eta,
+    String source,
+  })  : _source = source,
+        super(count, total);
+
+  double get percentage => count / 100;
+  // String should follow this format.
+  // [download]  99.6% of ~11.84MiB at  4.41MiB/s ETA 00:00
+  factory DownloadProgress.fromString(String downloadProgress) {
+    final RegExp regex =
+        RegExp(r'^.*?(\d.*?)%\s+of\s~?(\d.*?)\s+at\s+(\d.*?)\s(.*)');
+    final RegExpMatch matches = regex.firstMatch(downloadProgress.trim());
+
+    if (matches == null) {
+      return null;
+    }
+
+    final double percentage = double.tryParse(matches.group(1));
+    final String totalSize = matches.group(2);
+    final String downloadSpeed = matches.group(3);
+    final eta = matches.group(4);
+
+    return DownloadProgress(
+      count: percentage,
+      total: 100,
+      downloadSpeed: downloadSpeed,
+      totalSize: totalSize,
+      eta: eta,
+      source: downloadProgress,
+    );
+  }
+
+  @override
+  String toString() => _source;
 }

@@ -28,6 +28,7 @@ dependencies:
       path: plugins/file_chooser
       ref: 4ee135c
   path_provider: ^1.6.5
+  watcher: ^0.9.7+14
   dio: ^3.0.9
   conditional_wrapper: ^1.0.1
 

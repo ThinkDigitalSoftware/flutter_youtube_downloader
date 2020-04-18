@@ -93,12 +93,6 @@ class _SearchDrawerSectionState extends State<SearchDrawerSection> {
               ]),
             ),
             if (state.hasVideo) ...[
-//              Text.rich(TextSpan(text: 'Author: ', children: [
-//                TextSpan(
-//                  text: state.video.author,
-//                  style: TextStyle(fontWeight: FontWeight.w200),
-//                )
-//              ])),
               ListTile(
                 title: Text('Author'),
                 subtitle: Text(state.video.author),
@@ -106,27 +100,6 @@ class _SearchDrawerSectionState extends State<SearchDrawerSection> {
               ListTile(
                 title: Text('Duration'),
                 subtitle: Text(state.video.duration.toString()),
-              ),
-
-              Row(
-                children: <Widget>[Expanded(child: Divider()), Spacer()],
-              ),
-              ExpansionTile(
-                title: Text('Description'),
-                subtitle: AnimatedOpacity(
-                  opacity: shouldShowPreviewDescriptionText ? 1 : 0.2,
-                  duration: kThemeAnimationDuration,
-                  child: Text(
-                    state.video.description,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                onExpansionChanged: (isExpanded) {
-                  setState(() {
-                    shouldShowPreviewDescriptionText = !isExpanded;
-                  });
-                },
-                children: [Text(state.video.description)],
               ),
             ]
           ],
