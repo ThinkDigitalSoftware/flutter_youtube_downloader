@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_youtube_downloader/bloc/app_bloc.dart';
 import 'package:flutter_youtube_downloader/extensions.dart';
+import 'package:flutter_youtube_downloader/widgets/link_aware_text.dart';
 
 class VideoDetailsSection extends StatelessWidget {
   @override
@@ -49,7 +50,10 @@ class VideoDetailsSection extends StatelessWidget {
                               padding:
                                   const EdgeInsets.symmetric(vertical: 10.0),
                               child: SingleChildScrollView(
-                                child: Text(state.video.description),
+                                child: LinkAwareClickableText(
+                                  state.video.description,
+                                  onClick: (_) {},
+                                ),
                               ),
                             ),
                           ),

@@ -20,7 +20,7 @@ extension VideoX on Video {
     };
   }
 
-  static Video fromJson(Map<String, dynamic> json) {
+  static Video fromJson(Map<dynamic, dynamic> json) {
     assert(json['id'] != null);
 
     return Video(

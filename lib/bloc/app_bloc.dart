@@ -215,10 +215,12 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
           outputPath: path, outputStreamController: downloadController);
 
       // write to db
-      databaseService.write(MediaDownload(
-          path: outputFile.path,
-          video: state.video,
-          thumbnailUrl: state.video.thumbnailSet.lowResUrl));
+      databaseService.write(
+        MediaDownload(
+            path: outputFile.path,
+            video: state.video,
+            thumbnailUrl: state.video.thumbnailSet.lowResUrl),
+      );
     }
   }
 
@@ -230,7 +232,7 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
 
   void showInFinder(MediaDownload download) {
     FileSystemManager.openFile(
-      download.containingDirectoryPath,
+      download.path,
       openContainingDirectory: true,
     );
   }

@@ -35,9 +35,11 @@ class DatabaseService {
   }
 
   void write(MediaDownload mediaDownload) {
-    debugPrint('New download written to ${mediaDownload.path}');
-    downloads.existing.add(mediaDownload);
-    _box.put('downloads', downloads.toJson());
+    if (!downloads.contains(mediaDownload)) {
+      debugPrint('New download written to ${mediaDownload.path}');
+      downloads.existing.add(mediaDownload);
+      _box.put('downloads', downloads.toJson());
+    }
   }
 
   void clearDownloads() {
@@ -58,11 +60,13 @@ class MediaDownload {
 
 //<editor-fold desc="Data Methods" defaultstate="collapsed">
 
-  const MediaDownload({
+  MediaDownload({
     @required this.path,
     @required this.thumbnailUrl,
     @required this.video,
-  });
+  }) {
+    assert(file.existsSync());
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -105,7 +109,7 @@ class MediaDownload {
     };
   }
 
-  factory MediaDownload.fromJson(Map<String, dynamic> map) {
+  factory MediaDownload.fromJson(Map<dynamic, dynamic> map) {
     return new MediaDownload(
       path: map['path'] as String,
       thumbnailUrl: map['thumbnailUrl'] as String,
@@ -179,6 +183,9 @@ class Downloads {
           .toList(),
     );
   }
+
+  bool contains(MediaDownload mediaDownload) =>
+      allDownloads.contains(mediaDownload);
 
 //</editor-fold>
 }

@@ -1,4 +1,5 @@
 import 'package:flutter_youtube_downloader/constants.dart';
+import 'package:flutter_youtube_downloader/services/database.dart';
 import 'package:flutter_youtube_downloader/widgets/downloads_view.dart';
 import 'package:flutter_youtube_downloader/widgets/format_list_view.dart';
 
@@ -146,12 +147,16 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   ),
                   NavigationRailDestination(
                     icon: Icon(Icons.view_list,
-                        color: !state.hasMediaStreamInfo ? Colors.grey : null),
+                        color: !(state?.hasMediaStreamInfo ?? false)
+                            ? Colors.grey
+                            : null),
                     label: Text('Formats'),
                   ),
                   NavigationRailDestination(
                     icon: Icon(Icons.format_list_numbered,
-                        color: !state.hasMediaStreamInfo ? Colors.grey : null),
+                        color: !(state.hasMediaStreamInfo ?? false)
+                            ? Colors.grey
+                            : null),
                     label: Text('Downloads'),
                   ),
                 ],
@@ -392,12 +397,19 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                                           MainAxisAlignment
                                                               .spaceBetween,
                                                       children: <Widget>[
-                                                        Padding(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                      .only(
-                                                                  top: 15.0),
-                                                          child: Text(data),
+                                                        Expanded(
+                                                          child: Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                        .only(
+                                                                    top: 15.0),
+                                                            child: Text(
+                                                              data,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .fade,
+                                                            ),
+                                                          ),
                                                         ),
                                                         if (data == 'Complete!')
                                                           AnimatedBuilder(
@@ -485,7 +497,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   }
 
   void openDownload() {
-    var download = appBloc.databaseService.downloads.last;
+    final MediaDownload download = appBloc.databaseService.downloads.last;
     if (download.file.existsSync()) {
       appBloc.showInFinder(
         download,

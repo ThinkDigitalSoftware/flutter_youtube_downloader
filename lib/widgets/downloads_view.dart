@@ -28,6 +28,17 @@ class DownloadsView extends StatelessWidget {
                   download.video.title,
                   style: Theme.of(context).textTheme.bodyText1,
                 ),
+                subtitle: Row(
+                  children: <Widget>[
+                    Spacer(),
+                    OutlineButton(
+                      child: Text('Open in Finder'),
+                      onPressed: () {
+                        AppBloc.of(context).showInFinder(download);
+                      },
+                    ),
+                  ],
+                ),
               );
             },
             separatorBuilder: (BuildContext context, int index) {
