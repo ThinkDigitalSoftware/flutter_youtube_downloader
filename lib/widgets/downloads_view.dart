@@ -32,7 +32,7 @@ class DownloadsView extends StatelessWidget {
                   children: <Widget>[
                     Spacer(),
                     OutlineButton(
-                      child: Text('Open in Finder'),
+                      child: Text('Show in Finder'),
                       onPressed: () {
                         AppBloc.of(context).showInFinder(download);
                       },
