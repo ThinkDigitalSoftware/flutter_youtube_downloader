@@ -20,16 +20,18 @@ class VideoHistoryList extends StatelessWidget {
           style: TextStyle(fontSize: 30),
         ),
         Divider(),
-        ListView.builder(
-          itemCount: history.length,
-          shrinkWrap: true,
-          itemBuilder: (BuildContext context, int index) {
-            final HistoryEntry entry = history[index];
-            return VideoHistoryTile(
-              entry: entry,
-              onPressed: () => onPressed(entry),
-            );
-          },
+        Expanded(
+          child: ListView.builder(
+            itemCount: history.length,
+            shrinkWrap: true,
+            itemBuilder: (BuildContext context, int index) {
+              final HistoryEntry entry = history[index];
+              return VideoHistoryTile(
+                entry: entry,
+                onPressed: () => onPressed(entry),
+              );
+            },
+          ),
         ),
       ],
     );

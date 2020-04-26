@@ -1,9 +1,7 @@
-import 'package:flutter_youtube_downloader/bloc/search/search_bloc.dart';
 import 'package:flutter_youtube_downloader/constants.dart';
-import 'package:flutter_youtube_downloader/services/database.dart';
+import 'package:flutter_youtube_downloader/search/bloc/search_bloc.dart';
 import 'package:flutter_youtube_downloader/widgets/download_section.dart';
 import 'package:flutter_youtube_downloader/widgets/downloads_view.dart';
-import 'package:flutter_youtube_downloader/widgets/format_list_view.dart';
 
 import 'package:flutter_youtube_downloader/bloc/history_entry.dart';
 import 'package:flutter/cupertino.dart';
@@ -12,7 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_youtube_downloader/bloc/app/app_bloc.dart';
 import 'package:flutter_youtube_downloader/widgets/format_list_view_section.dart';
 import 'package:flutter_youtube_downloader/widgets/format_tile.dart';
-import 'package:flutter_youtube_downloader/widgets/search_drawer_section.dart';
+import 'package:flutter_youtube_downloader/search/search_drawer_section.dart';
 import 'package:flutter_youtube_downloader/widgets/video_details_section.dart';
 import 'package:flutter_youtube_downloader/widgets/video_history_list.dart';
 import 'package:hive/hive.dart';

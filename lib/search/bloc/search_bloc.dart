@@ -27,7 +27,10 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
   }
 
   Future<void> search(String query) async {
+    add(YieldState(SearchLoadingState(state.searchResults)));
+
     final results = await _youtubeExplode.searchVideos(query);
+
     add(YieldState(SearchResultsState(results)));
   }
 }

@@ -53,10 +53,11 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
 
     final video = await extractor.getVideo(id);
 
-    loadFromVideo(video);
+    await loadFromVideo(video);
 
-    _loadMediaStreamInfo(id);
-    _addHistoryEntry(video);
+    await _loadMediaStreamInfo(id);
+    await _addHistoryEntry(video);
+    add(YieldState(state.copyWith(isLoading: false)));
   }
 
   Future<void> _loadMediaStreamInfo(String id) async {
@@ -72,6 +73,7 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
         ),
       ),
     );
+    await first;
   }
 
   Future<MediaStreamInfoSet> _getMediaStreamUrls(String id) async {
@@ -145,7 +147,8 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
     _loadVideo(video);
     await firstWhere((newState) => newState.video == video);
     await _loadMediaStreamInfo(video.id);
-    _addHistoryEntry(video);
+    await _addHistoryEntry(video);
+    add(YieldState(state.copyWith(isLoading: false)));
   }
 
   void _loadVideo(Video video) {
@@ -252,7 +255,7 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
 
   String getUrlFromVideoId(String id) => 'https://www.youtube.com/watch?v=$id';
 
-  void _addHistoryEntry(Video video) {
+  Future<void> _addHistoryEntry(Video video) async {
     final historyEntry =
         HistoryEntry.fromVideo(video, url: getUrlFromVideoId(video.id));
     add(
@@ -266,6 +269,8 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
         ),
       ),
     );
+    await first;
+    return;
   }
 
   @override

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_youtube_downloader/bloc/app/app_bloc.dart';
-import 'package:flutter_youtube_downloader/bloc/search/search_bloc.dart';
+import 'package:flutter_youtube_downloader/search/bloc/search_bloc.dart';
 import 'package:flutter_youtube_downloader/widgets/video_tile.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart' hide Container;
 
@@ -83,7 +83,7 @@ class _SearchDrawerSectionState extends State<SearchDrawerSection> {
                           padding: const EdgeInsets.all(8.0),
                           child: Icon(Icons.search),
                         ),
-                        onTap: searchOnTap(appState),
+                        onTap: () => submit(widget.controller.text),
                       ),
                     )
                   ]),

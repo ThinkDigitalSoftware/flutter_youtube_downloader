@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:html_unescape/html_unescape_small.dart';
 
 class LinkAwareClickableText extends StatelessWidget {
   final String text;
@@ -10,9 +11,9 @@ class LinkAwareClickableText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final convertedText = HtmlUnescape().convert(text);
     //TODO clean up this split so it doesn't take non-word characters.
-    List splitText = text.split(RegExp(r'\s'));
-    print(splitText);
+    List splitText = convertedText.split(RegExp(r'\s'));
     List<List<String>> sections = [[]];
     int currentListIndex = 0;
 
