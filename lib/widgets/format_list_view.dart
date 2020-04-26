@@ -8,13 +8,12 @@ import 'package:flutter_youtube_downloader/constants.dart';
 import 'package:flutter_youtube_downloader/widgets/format_tile.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart' hide Container;
 
-class FormatListView extends StatelessWidget {
+class FormatListView extends StatefulWidget {
   final List<MediaStreamInfo> mediaStreams;
   final String title;
   final Function(DragMediaType) onDragStarted;
 
   final ValueChanged<MediaStreamInfo> onPressed;
-
   const FormatListView({
     Key key,
     @required this.title,
@@ -22,6 +21,18 @@ class FormatListView extends StatelessWidget {
     @required this.onPressed,
     this.onDragStarted,
   }) : super(key: key);
+
+  @override
+  _FormatListViewState createState() => _FormatListViewState();
+}
+
+class _FormatListViewState extends State<FormatListView> {
+  final ScrollController _scrollController = ScrollController();
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,19 +49,22 @@ class FormatListView extends StatelessWidget {
                 width: double.infinity,
                 alignment: Alignment.center,
                 padding: const EdgeInsets.all(8.0),
-                child: Text(title),
+                child: Text(widget.title),
               ),
             ),
             Expanded(
               child: CupertinoScrollbar(
+                controller: _scrollController,
+                isAlwaysShown: true,
                 child: ListView.separated(
-                  itemCount: mediaStreams.length,
+                  controller: _scrollController,
+                  itemCount: widget.mediaStreams.length,
                   shrinkWrap: true,
                   separatorBuilder: (BuildContext context, int index) {
                     return Divider();
                   },
                   itemBuilder: (BuildContext context, int index) {
-                    final MediaStreamInfo format = mediaStreams[index];
+                    final MediaStreamInfo format = widget.mediaStreams[index];
                     Stream<Progress> downloadProgress =
                         AppBloc.of(context).downloadProgress[format];
                     return ConditionalWrapper(
@@ -62,22 +76,24 @@ class FormatListView extends StatelessWidget {
                           child: child,
                           onDragStarted: () {
                             if (format is VideoStreamInfo) {
-                              onDragStarted(DragMediaType.video);
+                              widget.onDragStarted(DragMediaType.video);
                             }
                             if (format is AudioStreamInfo) {
-                              onDragStarted(DragMediaType.audio);
+                              widget.onDragStarted(DragMediaType.audio);
                             }
                           },
                           onDraggableCanceled: (_, __) {
-                            onDragStarted(null);
+                            widget.onDragStarted(null);
                           },
                         );
                       },
                       child: FormatTile(
                         format: format,
                         trailing: IconButton(
-                            icon: Icon(Icons.cloud_download),
-                            onPressed: () => onPressed(format)),
+                          icon: Icon(Icons.cloud_download),
+                          onPressed: () => widget.onPressed(format),
+                          tooltip: 'Download',
+                        ),
                         progressStream: downloadProgress,
                       ),
                     );

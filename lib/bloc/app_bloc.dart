@@ -67,7 +67,7 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
             if (!state.history.any((entry) => entry.id == historyEntry.id))
               historyEntry
           ],
-          navigationDrawerIndex: state.navigationDrawerIndex,
+          navigationDrawerIndex: 2,
           isLoading: false,
         ),
       ),
@@ -116,7 +116,9 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
       final file = File(path);
       final downloadController = StreamController<Progress>();
       downloadProgress[format] = downloadController.stream;
+
       add(YieldState(state.copyWith(isDownloading: true)));
+
       final Response result =
           await _dio.get(url, onReceiveProgress: (count, total) {
         downloadController.add(Progress(count.toDouble(), total.toDouble()));

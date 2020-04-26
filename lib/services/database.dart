@@ -51,6 +51,7 @@ class MediaDownload {
   final String path;
   final String thumbnailUrl;
   final Video video;
+  final bool fileExists;
 
   File get file => File(path);
 
@@ -64,9 +65,7 @@ class MediaDownload {
     @required this.path,
     @required this.thumbnailUrl,
     @required this.video,
-  }) {
-    assert(file.existsSync());
-  }
+  }) : fileExists = File(path).existsSync();
 
   @override
   bool operator ==(Object other) =>

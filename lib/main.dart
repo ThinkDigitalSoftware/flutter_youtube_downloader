@@ -1,5 +1,6 @@
 import 'package:flutter_youtube_downloader/constants.dart';
 import 'package:flutter_youtube_downloader/services/database.dart';
+import 'package:flutter_youtube_downloader/widgets/download_section.dart';
 import 'package:flutter_youtube_downloader/widgets/downloads_view.dart';
 import 'package:flutter_youtube_downloader/widgets/format_list_view.dart';
 
@@ -60,7 +61,6 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   final TextEditingController urlController = TextEditingController();
   AnimationController searchAnimationController;
-  AnimationController showInFinderAnimationController;
   AudioStreamInfo _audioStreamInfoToMerge;
   VideoStreamInfo _videoStreamInfoToMerge;
 
@@ -77,12 +77,6 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       upperBound: 1,
     );
 
-    showInFinderAnimationController = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 20),
-      lowerBound: 0,
-      upperBound: 1,
-    );
     super.initState();
   }
 
@@ -181,6 +175,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       if (state.hasVideo)
                         Expanded(child: VideoDetailsSection()),
@@ -189,7 +184,6 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                         child: Divider(),
                       ),
                       Expanded(
-//                        flex: 2,
                         child: Padding(
                           padding: EdgeInsets.all(10),
                           child: Card(
@@ -210,7 +204,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                   padding: const EdgeInsets.all(padding),
                                   child: Row(
                                     children: [
-                                      //TODO @ThinkDigitalSoftware: Break these two DropTargets into separate widgets.
+                                      //TODO @ThinkDigitalSoftware: Break these two DragTargets into separate widgets.
                                       Expanded(
                                         // Video DropTarget
                                         child: DragTarget<MediaStreamInfo>(
@@ -352,134 +346,22 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                   padding: EdgeInsets.symmetric(horizontal: 20),
                                   child: Divider(),
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                      left: 10, right: 10, bottom: 10),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Card(
-                                          child: Container(
-                                            height: 90,
-                                            padding: EdgeInsets.all(10),
-                                            margin: EdgeInsets.all(10),
-                                            child: StreamBuilder(
-                                              stream: appBloc.downloadController
-                                                      ?.stream ??
-                                                  Stream<String>.empty(),
-                                              initialData: '',
-                                              builder: (BuildContext context,
-                                                  AsyncSnapshot<String>
-                                                      snapshot) {
-                                                String data = snapshot.data;
-                                                double
-                                                    progressIndicatorPercentage =
-                                                    _getProgressIndicatorPercentage(
-                                                        data);
-
-                                                if (progressIndicatorPercentage ==
-                                                    1.0) {
-                                                  data = 'Complete!';
-                                                }
-                                                return Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: <Widget>[
-                                                    Expanded(
-                                                        child: Row(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      children: <Widget>[
-                                                        Expanded(
-                                                          child: Padding(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                        .only(
-                                                                    top: 15.0),
-                                                            child: Text(
-                                                              data,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .fade,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        if (data == 'Complete!')
-                                                          AnimatedBuilder(
-                                                            builder:
-                                                                (BuildContext
-                                                                        context,
-                                                                    Widget
-                                                                        child) {
-                                                              return FlatButton(
-                                                                onPressed:
-                                                                    openDownload,
-                                                                child: Text(
-                                                                    'Show in Finder'),
-                                                              );
-                                                            },
-                                                            animation:
-                                                                showInFinderAnimationController,
-                                                          ),
-                                                      ],
-                                                    )),
-                                                    LinearProgressIndicator(
-                                                      value:
-                                                          progressIndicatorPercentage,
-                                                    ),
-                                                  ],
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 10,
-                                      ),
-                                      Expanded(
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            OutlineButton(
-                                              child: Text('Clear'),
-                                              onPressed: () {
-                                                setState(() {
-                                                  _audioStreamInfoToMerge =
-                                                      null;
-                                                  _audioStreamDropTargetElevation =
-                                                      0;
-                                                  _videoStreamInfoToMerge =
-                                                      null;
-                                                  _videoStreamDropTargetElevation =
-                                                      0;
-                                                });
-                                              },
-                                            ),
-                                            RaisedButton.icon(
-                                                onPressed: downloadAndMerge(),
-                                                icon: Icon(Icons.merge_type),
-                                                label:
-                                                    Text('Download and Merge')),
-                                            RaisedButton.icon(
-                                                onPressed:
-                                                    downloadAndMergeBest(),
-                                                icon: Icon(Icons.merge_type),
-                                                label: Text('Auto-select Best'))
-                                          ],
-                                        ),
-                                      )
-                                    ],
-                                  ),
-                                )
+                                Expanded(
+                                    child: DownloadSection(
+                                  audioStreamInfoToMerge:
+                                      _audioStreamInfoToMerge,
+                                  videoStreamInfoToMerge:
+                                      _videoStreamInfoToMerge,
+                                  url: urlController.text,
+                                  onClear: () {
+                                    setState(() {
+                                      _audioStreamInfoToMerge = null;
+                                      _audioStreamDropTargetElevation = 0;
+                                      _videoStreamInfoToMerge = null;
+                                      _videoStreamDropTargetElevation = 0;
+                                    });
+                                  },
+                                )),
                               ],
                             ),
                           ),
@@ -494,51 +376,6 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         );
       },
     );
-  }
-
-  void openDownload() {
-    final MediaDownload download = appBloc.databaseService.downloads.last;
-    if (download.file.existsSync()) {
-      appBloc.showInFinder(
-        download,
-      );
-    } else {
-      showInFinderAnimationController.repeat(
-          reverse: true, period: Duration(milliseconds: 500));
-    }
-  }
-
-  double _getProgressIndicatorPercentage(String data) {
-    DownloadProgress progress = DownloadProgress.fromString(data);
-    if (data.isEmpty) {
-      return 0.0;
-    }
-    if (data.contains('downloaded') || data.startsWith('Deleting')) {
-      return 1;
-    }
-
-    return progress?.percentage;
-  }
-
-  Function downloadAndMerge() {
-    if (_videoStreamInfoToMerge != null && _audioStreamInfoToMerge != null) {
-      return () => appBloc.downloadAndMerge(
-            videoFormat: _videoStreamInfoToMerge,
-            audioFormat: _audioStreamInfoToMerge,
-          );
-    } else {
-      return null;
-    }
-  }
-
-  Function downloadAndMergeBest() {
-    String url = urlController.text;
-
-    if (url.isEmpty || YoutubeExplode.parseVideoId(url) == null) {
-      return null;
-    } else {
-      return () => appBloc.downloadAndMergeBest(url);
-    }
   }
 
   Widget getDrawerWidget(AppState state) {
