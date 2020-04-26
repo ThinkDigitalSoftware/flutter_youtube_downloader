@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:conditional_wrapper/conditional_wrapper.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_youtube_downloader/bloc/app_bloc.dart';
+import 'package:flutter_youtube_downloader/bloc/app/app_bloc.dart';
 import 'package:flutter_youtube_downloader/constants.dart';
 import 'package:flutter_youtube_downloader/widgets/format_tile.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart' hide Container;
@@ -14,13 +14,14 @@ class FormatListView extends StatefulWidget {
   final Function(DragMediaType) onDragStarted;
 
   final ValueChanged<MediaStreamInfo> onPressed;
-  const FormatListView({
+  FormatListView({
     Key key,
     @required this.title,
-    @required this.mediaStreams,
+    @required List<MediaStreamInfo> mediaStreams,
     @required this.onPressed,
     this.onDragStarted,
-  }) : super(key: key);
+  })  : mediaStreams = mediaStreams..reversed.toList(),
+        super(key: key);
 
   @override
   _FormatListViewState createState() => _FormatListViewState();

@@ -1,6 +1,6 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_youtube_downloader/bloc/history_entry.dart';
+import 'package:flutter_youtube_downloader/widgets/video_tile.dart';
 
 class VideoHistoryTile extends StatelessWidget {
   final HistoryEntry entry;
@@ -14,26 +14,14 @@ class VideoHistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: entry.video.description,
-      child: ListTile(
-        contentPadding: EdgeInsets.only(right: 16.0),
-        leading: CachedNetworkImage(
-          height: 50,
-          fit: BoxFit.contain,
-          imageUrl: entry.video.thumbnailSet.lowResUrl,
-        ),
-        title: Text(
-          entry.title,
-          style: TextStyle(fontSize: 12),
-        ),
-        hoverColor: Colors.white70,
-        trailing: OutlineButton(
-          child: Text('Select'),
-          onPressed: onPressed,
-        ),
+    return VideoListTile(
+      title: entry.title,
+      thumbnailUrl: entry.video.thumbnailSet.lowResUrl,
+      tooltipMessage: entry.video.description,
+      trailing: OutlineButton(
+        child: Text('Select'),
+        onPressed: onPressed,
       ),
-      waitDuration: Duration(seconds: 3),
     );
   }
 }

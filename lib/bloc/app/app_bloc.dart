@@ -51,22 +51,22 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
   Future<void> getVideoDetails(String url) async {
     final id = YoutubeExplode.parseVideoId(url);
 
-    add(YieldState(state.copyWith(isLoading: true)));
-
     final video = await extractor.getVideo(id);
-    final MediaStreamInfoSet mediaStreamInfoSet = await getMediaStreamUrls(id);
-    final historyEntry = HistoryEntry.fromVideo(video, url: url);
+
+    loadFromVideo(video);
+
+    _loadMediaStreamInfo(id);
+    _addHistoryEntry(video);
+  }
+
+  Future<void> _loadMediaStreamInfo(String id) async {
+    add(YieldState(state.copyWith(isLoading: true)));
+    final MediaStreamInfoSet mediaStreamInfoSet = await _getMediaStreamUrls(id);
 
     add(
       YieldState(
         state.copyWith(
-          video: video,
           mediaStreamInfoSet: mediaStreamInfoSet,
-          history: [
-            ...state.history,
-            if (!state.history.any((entry) => entry.id == historyEntry.id))
-              historyEntry
-          ],
           navigationDrawerIndex: 2,
           isLoading: false,
         ),
@@ -74,7 +74,7 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
     );
   }
 
-  Future<MediaStreamInfoSet> getMediaStreamUrls(String id) async {
+  Future<MediaStreamInfoSet> _getMediaStreamUrls(String id) async {
     final MediaStreamInfoSet mediaStreams =
         await extractor.getVideoMediaStream(id);
 
@@ -139,6 +139,17 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
     }
 
     return false;
+  }
+
+  Future<void> loadFromVideo(Video video) async {
+    _loadVideo(video);
+    await firstWhere((newState) => newState.video == video);
+    await _loadMediaStreamInfo(video.id);
+    _addHistoryEntry(video);
+  }
+
+  void _loadVideo(Video video) {
+    add(YieldState(state.copyWith(video: video)));
   }
 
   void raiseDropTarget(DragMediaType mediaType) {
@@ -237,5 +248,28 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
       download.path,
       openContainingDirectory: true,
     );
+  }
+
+  String getUrlFromVideoId(String id) => 'https://www.youtube.com/watch?v=$id';
+
+  void _addHistoryEntry(Video video) {
+    final historyEntry =
+        HistoryEntry.fromVideo(video, url: getUrlFromVideoId(video.id));
+    add(
+      YieldState(
+        state.copyWith(
+          history: [
+            ...state.history,
+            if (!state.history.any((entry) => entry.id == historyEntry.id))
+              historyEntry
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void onTransition(Transition<AppEvent, AppState> transition) {
+    super.onTransition(transition);
   }
 }

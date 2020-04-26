@@ -1,3 +1,4 @@
+import 'package:flutter_youtube_downloader/bloc/search/search_bloc.dart';
 import 'package:flutter_youtube_downloader/constants.dart';
 import 'package:flutter_youtube_downloader/services/database.dart';
 import 'package:flutter_youtube_downloader/widgets/download_section.dart';
@@ -8,7 +9,7 @@ import 'package:flutter_youtube_downloader/bloc/history_entry.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_youtube_downloader/bloc/app_bloc.dart';
+import 'package:flutter_youtube_downloader/bloc/app/app_bloc.dart';
 import 'package:flutter_youtube_downloader/widgets/format_list_view_section.dart';
 import 'package:flutter_youtube_downloader/widgets/format_tile.dart';
 import 'package:flutter_youtube_downloader/widgets/search_drawer_section.dart';
@@ -33,8 +34,15 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => AppBloc(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => AppBloc(),
+        ),
+        BlocProvider(
+          create: (context) => SearchBloc(),
+        )
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Flutter Youtube Video Downloader',

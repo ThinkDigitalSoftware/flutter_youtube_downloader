@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_youtube_downloader/bloc/app_bloc.dart';
+import 'package:flutter_youtube_downloader/bloc/app/app_bloc.dart';
 import 'package:flutter_youtube_downloader/services/database.dart';
 
 class DownloadsView extends StatelessWidget {
@@ -47,7 +47,6 @@ class DownloadTile extends StatelessWidget {
         leading: CachedNetworkImage(
           imageUrl: download.thumbnailUrl,
         ),
-        //TODO: Add onClick to open file. Add blurred out view if download not available.
         title: Text(
           download.video.title,
           style: Theme.of(context).textTheme.bodyText1,

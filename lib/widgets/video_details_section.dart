@@ -1,7 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_youtube_downloader/bloc/app_bloc.dart';
+import 'package:flutter_youtube_downloader/bloc/app/app_bloc.dart';
 import 'package:flutter_youtube_downloader/extensions.dart';
 import 'package:flutter_youtube_downloader/widgets/link_aware_text.dart';
 
@@ -20,8 +20,8 @@ class VideoDetailsSection extends StatelessWidget {
                   padding: EdgeInsets.all(10),
                   child: Card(
                     child: CachedNetworkImage(
-                      imageUrl: state.video.thumbnailSet.mediumResUrl,
-                      fit: BoxFit.fitHeight,
+                      imageUrl: state.video.thumbnailSet.highResUrl,
+                      fit: BoxFit.cover,
                     ),
                     elevation: 8,
                   ),

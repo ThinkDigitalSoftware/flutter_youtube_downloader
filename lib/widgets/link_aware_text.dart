@@ -42,7 +42,7 @@ class LinkAwareClickableText extends StatelessWidget {
     List<TextSpan> children = [
       for (final text in joinedLists) _getTextSpan(text)
     ];
-    return Text.rich(
+    return SelectableText.rich(
       TextSpan(
         text: firstTextSpan,
         children: children,
