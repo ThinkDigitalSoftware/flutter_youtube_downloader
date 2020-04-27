@@ -161,19 +161,10 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   ),
                 ],
                 selectedIndex: state.navigationDrawerIndex,
-                labelType: NavigationRailLabelType.selected,
+                labelType: NavigationRailLabelType.all,
                 onDestinationSelected: (int index) {
                   appBloc.changeNavigationIndex(index);
                 },
-              ),
-              Drawer(
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: AnimatedSwitcher(
-                    duration: kThemeAnimationDuration,
-                    child: getDrawerWidget(state),
-                  ),
-                ),
               ),
               Expanded(
                 child: Container(
@@ -376,7 +367,16 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                     ],
                   ),
                 ),
-              )
+              ),
+              Drawer(
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: AnimatedSwitcher(
+                    duration: kThemeAnimationDuration,
+                    child: getDrawerWidget(state),
+                  ),
+                ),
+              ),
             ],
           ),
         );

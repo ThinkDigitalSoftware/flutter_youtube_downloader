@@ -14,6 +14,7 @@ class FormatListView extends StatefulWidget {
   final Function(DragMediaType) onDragStarted;
 
   final ValueChanged<MediaStreamInfo> onPressed;
+
   FormatListView({
     Key key,
     @required this.title,
@@ -29,6 +30,8 @@ class FormatListView extends StatefulWidget {
 
 class _FormatListViewState extends State<FormatListView> {
   final ScrollController _scrollController = ScrollController();
+  SortOrder _sortOrder = SortOrder.highest;
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -47,25 +50,74 @@ class _FormatListViewState extends State<FormatListView> {
               color: Theme.of(context).cardColor,
               elevation: elevation,
               child: Container(
-                width: double.infinity,
                 alignment: Alignment.center,
-                padding: const EdgeInsets.all(8.0),
-                child: Text(widget.title),
+                padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(widget.title),
+                          Text.rich(
+                            TextSpan(
+                              text: 'Quality',
+                              style: Theme.of(context)
+                                  .accentTextTheme
+                                  .caption
+                                  .copyWith(
+                                      color: Theme.of(context).accentColor),
+                              children: [
+                                TextSpan(
+                                    text:
+                                        '${_sortOrder == SortOrder.highest ? '☝🏾' : '👇🏾'}',
+                                    style: TextStyle(fontSize: 18))
+                              ],
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                    Tooltip(
+                      message:
+                          'Sort by ${_sortOrder == SortOrder.lowest ? 'highest' : 'lowest'} quality',
+                      waitDuration: Duration(seconds: 1),
+                      child: IconButton(
+                          icon: RotatedBox(
+                              quarterTurns:
+                                  _sortOrder == SortOrder.highest ? 0 : 2,
+                              child: Icon(Icons.sort)),
+                          onPressed: () {
+                            setState(() {
+                              if (_sortOrder == SortOrder.highest) {
+                                _sortOrder = SortOrder.lowest;
+                              } else {
+                                _sortOrder = SortOrder.highest;
+                              }
+                            });
+                          }),
+                    )
+                  ],
+                ),
               ),
             ),
-            Expanded(
+            Flexible(
+              fit: FlexFit.loose,
               child: CupertinoScrollbar(
                 controller: _scrollController,
-                isAlwaysShown: true,
+//                isAlwaysShown: true,
                 child: ListView.separated(
                   controller: _scrollController,
-                  itemCount: widget.mediaStreams.length,
+                  itemCount: mediaStreams.length,
                   shrinkWrap: true,
                   separatorBuilder: (BuildContext context, int index) {
                     return Divider();
                   },
                   itemBuilder: (BuildContext context, int index) {
-                    final MediaStreamInfo format = widget.mediaStreams[index];
+                    final MediaStreamInfo format = mediaStreams[index];
                     Stream<Progress> downloadProgress =
                         AppBloc.of(context).downloadProgress[format];
                     return ConditionalWrapper(
@@ -90,10 +142,14 @@ class _FormatListViewState extends State<FormatListView> {
                       },
                       child: FormatTile(
                         format: format,
-                        trailing: IconButton(
-                          icon: Icon(Icons.cloud_download),
-                          onPressed: () => widget.onPressed(format),
-                          tooltip: 'Download',
+                        trailing: Tooltip(
+                          message: 'Download',
+                          waitDuration: Duration(seconds: 1),
+                          child: IconButton(
+                            icon: Icon(Icons.cloud_download),
+                            onPressed: () => widget.onPressed(format),
+                            hoverColor: Colors.transparent,
+                          ),
                         ),
                         progressStream: downloadProgress,
                       ),
@@ -107,6 +163,10 @@ class _FormatListViewState extends State<FormatListView> {
       ),
     );
   }
+
+  List<MediaStreamInfo> get mediaStreams => _sortOrder == SortOrder.highest
+      ? (widget.mediaStreams.reversed.toList())
+      : widget.mediaStreams;
 }
 
 class Progress {
@@ -135,6 +195,7 @@ class DownloadProgress extends Progress {
         super(count, total);
 
   double get percentage => count / 100;
+
   // String should follow this format.
   // [download]  99.6% of ~11.84MiB at  4.41MiB/s ETA 00:00
   factory DownloadProgress.fromString(String downloadProgress) {
@@ -164,3 +225,5 @@ class DownloadProgress extends Progress {
   @override
   String toString() => _source;
 }
+
+enum SortOrder { highest, lowest }

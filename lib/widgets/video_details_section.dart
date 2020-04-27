@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_youtube_downloader/widgets/fallback_loading_cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_youtube_downloader/bloc/app/app_bloc.dart';
@@ -16,12 +17,18 @@ class VideoDetailsSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Expanded(
+                flex: 2,
                 child: Container(
                   padding: EdgeInsets.all(10),
                   child: Card(
-                    child: CachedNetworkImage(
-                      imageUrl: state.video.thumbnailSet.highResUrl,
-                      fit: BoxFit.cover,
+                    child: FallbackLoadingCachedNetworkImage(
+                      urls: [
+                        state.video.thumbnailSet.maxResUrl,
+                        state.video.thumbnailSet.highResUrl,
+                        state.video.thumbnailSet.mediumResUrl,
+                        state.video.thumbnailSet.standardResUrl,
+                        state.video.thumbnailSet.lowResUrl,
+                      ],
                     ),
                     elevation: 8,
                   ),
@@ -29,7 +36,12 @@ class VideoDetailsSection extends StatelessWidget {
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(10.0),
+                  padding: const EdgeInsets.fromLTRB(
+                    0,
+                    10.0,
+                    10.0,
+                    10.0,
+                  ),
                   child: Card(
                     child: Container(
                       padding: EdgeInsets.all(10),
@@ -41,8 +53,20 @@ class VideoDetailsSection extends StatelessWidget {
                               state.video.title,
                               style: Theme.of(context).textTheme.headline6,
                             ),
-                            subtitle: Text(
-                                '${state.video.statistics.viewCount} views • ${state.video.uploadDate.toMdY()}'),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  height: 3,
+                                ),
+                                Text(
+                                  state.video.author,
+                                  style: TextStyle(fontWeight: FontWeight.w400),
+                                ),
+                                Text(
+                                    '${state.video.statistics.viewCount} views • ${state.video.uploadDate.toMdY()}'),
+                              ],
+                            ),
                           ),
                           Divider(),
                           Expanded(

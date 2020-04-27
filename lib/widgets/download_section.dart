@@ -151,10 +151,10 @@ class _DownloadSectionState extends State<DownloadSection>
   }
 
   Function downloadAndMergeBest() {
-    if (widget.url.isEmpty || YoutubeExplode.parseVideoId(widget.url) == null) {
+    if (!appBloc.state.hasVideo) {
       return null;
     } else {
-      return () => appBloc.downloadAndMergeBest(widget.url);
+      return () => appBloc.downloadAndMergeBest();
     }
   }
 

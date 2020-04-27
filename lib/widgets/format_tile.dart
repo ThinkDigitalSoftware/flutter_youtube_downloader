@@ -21,53 +21,45 @@ class FormatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ConditionalWrapper(
-      condition: kDebugMode,
-      builder: (context, child) => Tooltip(
-        message: format.toString(),
-        child: child,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            title: Text.rich(
-              TextSpan(
-                text: 'Format: ',
-                children: [
-                  TextSpan(
-                    text: _getFormatText(),
-                    style: TextStyle(fontWeight: FontWeight.w200),
-                  )
-                ],
-              ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          title: Text.rich(
+            TextSpan(
+              text: 'Format: ',
+              children: [
+                TextSpan(
+                  text: _getFormatText(),
+                  style: TextStyle(fontWeight: FontWeight.w200),
+                )
+              ],
             ),
-            subtitle: Text.rich(
-              TextSpan(
-                text:
-                    '${format is AudioStreamInfo ? 'Bitrate' : 'Resolution'}: ',
-                children: [
-                  TextSpan(
-                    text: _getQualityText(),
-                    style: TextStyle(fontWeight: FontWeight.w200),
-                  )
-                ],
-              ),
-            ),
-            trailing: trailing,
           ),
-          if (progressStream != null)
-            StreamBuilder<Progress>(
-              stream: progressStream,
-              initialData: Progress(0, 1),
-              builder: (context, snapshot) {
-                return LinearProgressIndicator(
-                  value: snapshot.data.ratio,
-                );
-              },
-            )
-        ],
-      ),
+          subtitle: Text.rich(
+            TextSpan(
+              text: '${format is AudioStreamInfo ? 'Bitrate' : 'Resolution'}: ',
+              children: [
+                TextSpan(
+                  text: _getQualityText(),
+                  style: TextStyle(fontWeight: FontWeight.w200),
+                )
+              ],
+            ),
+          ),
+          trailing: trailing,
+        ),
+        if (progressStream != null)
+          StreamBuilder<Progress>(
+            stream: progressStream,
+            initialData: Progress(0, 1),
+            builder: (context, snapshot) {
+              return LinearProgressIndicator(
+                value: snapshot.data.ratio,
+              );
+            },
+          )
+      ],
     );
   }
 

@@ -29,6 +29,7 @@ dependencies:
   html_unescape: ^1.0.1+3
   dio: ^3.0.9
   conditional_wrapper: ^1.0.1
+  loading_indicator: ^1.1.0
 
 dev_dependencies:
   flutter_test:

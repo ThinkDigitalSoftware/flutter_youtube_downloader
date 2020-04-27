@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:html_unescape/html_unescape.dart';
 
 class VideoListTile extends StatelessWidget {
   final String tooltipMessage;
@@ -22,8 +23,9 @@ class VideoListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final escapedTooltipMessage = HtmlUnescape().convert(tooltipMessage);
     return Tooltip(
-      message: tooltipMessage,
+      message: escapedTooltipMessage,
       child: ListTile(
         contentPadding: EdgeInsets.only(right: 16.0),
         leading: CachedNetworkImage(
@@ -35,11 +37,10 @@ class VideoListTile extends StatelessWidget {
           title,
           style: TextStyle(fontSize: 12),
         ),
-        hoverColor: Colors.white70,
         trailing: trailing,
         onTap: onTap,
       ),
-      waitDuration: Duration(seconds: 3),
+      waitDuration: Duration(seconds: 1),
     );
   }
 }

@@ -215,7 +215,7 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
     //TODO: merge using ffmpeg
   }
 
-  Future<void> downloadAndMergeBest(String url) async {
+  Future<void> downloadAndMergeBest() async {
     final videoFormat = state.mediaStreamInfoSet.video.first;
 
     var extension = videoFormat.container.extension;
@@ -227,8 +227,10 @@ class AppBloc extends HydratedBloc<AppEvent, AppState> {
 
     if (!fileChooserResult.canceled) {
       final String path = fileChooserResult.paths.first;
-      final outputFile = await youtubeDL.downloadBestAudioVideo(url,
-          outputPath: path, outputStreamController: downloadController);
+      final outputFile = await youtubeDL.downloadBestAudioVideo(
+          getUrlFromVideoId(state.video.id),
+          outputPath: path,
+          outputStreamController: downloadController);
 
       // write to db
       databaseService.write(

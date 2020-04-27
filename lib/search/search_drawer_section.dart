@@ -1,8 +1,11 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_youtube_downloader/bloc/app/app_bloc.dart';
 import 'package:flutter_youtube_downloader/search/bloc/search_bloc.dart';
 import 'package:flutter_youtube_downloader/widgets/video_tile.dart';
+import 'package:loading_indicator/loading_indicator.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart' hide Container;
 
 class SearchDrawerSection extends StatefulWidget {
@@ -57,6 +60,7 @@ class _SearchDrawerSectionState extends State<SearchDrawerSection> {
                                 widget.controller.clear();
                               }
                             },
+                            hoverColor: Colors.transparent,
                           ),
                         ),
                         controller: widget.controller,
@@ -77,7 +81,8 @@ class _SearchDrawerSectionState extends State<SearchDrawerSection> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      padding:
+                          const EdgeInsets.only(left: 10, top: 10, bottom: 10),
                       child: InkWell(
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
@@ -88,7 +93,21 @@ class _SearchDrawerSectionState extends State<SearchDrawerSection> {
                     )
                   ]),
                 ),
-                if (searchState is SearchResultsState)
+                if (searchState is SearchLoadingState)
+                  Expanded(
+                    child: Container(
+                      alignment: Alignment.center,
+                      constraints: BoxConstraints.expand(),
+                      child: Padding(
+                        padding: const EdgeInsets.all(15.0),
+                        child: LoadingIndicator(
+                          indicatorType: getIndicator,
+                          color: Theme.of(context).accentColor,
+                        ),
+                      ),
+                    ),
+                  )
+                else if (searchState is SearchResultsState)
                   Expanded(
                     child: ListView.builder(
                       shrinkWrap: true,
@@ -110,6 +129,11 @@ class _SearchDrawerSectionState extends State<SearchDrawerSection> {
         );
       },
     );
+  }
+
+  Indicator get getIndicator {
+    final index = Random().nextInt(Indicator.values.length - 1);
+    return Indicator.values[index];
   }
 
   Function searchOnTap(AppState state) {
@@ -153,11 +177,14 @@ class VideoSearchListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return VideoListTile(
-      thumbnailUrl: video.thumbnailSet.lowResUrl,
-      title: video.title,
-      tooltipMessage: video.description,
-      onTap: onTap,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: VideoListTile(
+        thumbnailUrl: video.thumbnailSet.lowResUrl,
+        title: video.title,
+        tooltipMessage: video.description,
+        onTap: onTap,
+      ),
     );
   }
 }

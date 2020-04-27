@@ -32,8 +32,10 @@ class FormatListViewSection extends StatelessWidget {
               constraints: BoxConstraints(minHeight: 500),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
+                  Flexible(
+                    fit: FlexFit.loose,
                     child: FormatListView(
                       title: 'Video with Audio',
                       mediaStreams: state.mediaStreamInfoSet.muxed,
@@ -48,7 +50,8 @@ class FormatListViewSection extends StatelessWidget {
                       },
                     ),
                   ),
-                  Expanded(
+                  Flexible(
+                    fit: FlexFit.loose,
                     child: FormatListView(
                         title: 'Video Only',
                         mediaStreams: state.mediaStreamInfoSet.video,
@@ -63,7 +66,8 @@ class FormatListViewSection extends StatelessWidget {
                           appBloc.raiseDropTarget(mediaType);
                         }),
                   ),
-                  Expanded(
+                  Flexible(
+                    fit: FlexFit.loose,
                     child: FormatListView(
                         title: 'Audio only',
                         mediaStreams: state.mediaStreamInfoSet.audio,
